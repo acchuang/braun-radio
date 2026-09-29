@@ -1,0 +1,249 @@
+import * as THREE from 'three';
+
+/**
+ * Handles 3D raycasting, knob dragging, button clicks, and tactile feedback
+ */
+export class InteractionManager {
+  constructor(camera, renderer, radio, audioEngine, controls, onStateChange) {
+    this.camera = camera;
+    this.renderer = renderer;
+    this.radio = radio;
+    this.audioEngine = audioEngine;
+    this.controls = controls;
+    this.onStateChange = onStateChange;
+
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+
+    // Dragging state
+    this.isDragging = false;
+    this.draggedKnob = null;
+    this.lastMousePos = { x: 0, y: 0 };
+    this.hoveredObject = null;
+
+    // Last knob tick sound position tracking
+    this.lastTuningTickAngle = 0;
+
+    this.setupListeners();
+  }
+
+  setupListeners() {
+    const dom = this.renderer.domElement;
+
+    dom.addEventListener('pointerdown', this.onPointerDown.bind(this));
+    window.addEventListener('pointermove', this.onPointerMove.bind(this));
+    window.addEventListener('pointerup', this.onPointerUp.bind(this));
+    dom.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
+  }
+
+  // Find interactive object or ancestor in group
+  findInteractiveParent(obj) {
+    let curr = obj;
+    while (curr) {
+      if (curr.userData && (curr.userData.isKnob || curr.userData.isButton || curr.userData.isSwitch || curr.userData.isAntenna)) {
+        return curr;
+      }
+      if (curr === this.radio.group) break;
+      curr = curr.parent;
+    }
+    return null;
+  }
+
+  onPointerDown(e) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.radio.group.children, true);
+
+    if (intersects.length > 0) {
+      const target = this.findInteractiveParent(intersects[0].object);
+      if (target) {
+        // 1. Knob Interaction
+        if (target.userData.isKnob) {
+          this.isDragging = true;
+          this.draggedKnob = target;
+          this.controls.enabled = false; // pause orbit controls while twisting knob
+          this.lastMousePos = { x: e.clientX, y: e.clientY };
+          document.body.style.cursor = 'grabbing';
+          e.preventDefault();
+          return;
+        }
+
+        // 2. Band Button Click
+        if (target.userData.isButton && target.userData.type === 'band') {
+          const band = target.userData.value;
+          this.audioEngine.setBand(band);
+          this.radio.setActiveBand(band);
+          this.radio.setFrequency(this.audioEngine.frequency, band);
+          if (this.onStateChange) this.onStateChange();
+          return;
+        }
+
+        // 3. Power Switch Toggle
+        if (target.userData.isSwitch && target.userData.name === 'power') {
+          const newState = !this.audioEngine.isPoweredOn;
+          this.audioEngine.setPower(newState);
+          this.radio.setPower(newState);
+          if (this.onStateChange) this.onStateChange();
+          return;
+        }
+
+        // 4. Telescopic Antenna Toggle
+        if (target.userData.isAntenna) {
+          const extended = this.radio.toggleAntenna();
+          this.audioEngine.setAntenna(extended);
+          this.audioEngine.playSFX('click');
+          if (this.onStateChange) this.onStateChange();
+          return;
+        }
+      }
+    }
+  }
+
+  onPointerMove(e) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Handle Active Knob Dragging
+    if (this.isDragging && this.draggedKnob) {
+      const deltaX = e.clientX - this.lastMousePos.x;
+      const deltaY = this.lastMousePos.y - e.clientY; // up is positive
+      this.lastMousePos = { x: e.clientX, y: e.clientY };
+
+      const moveDelta = deltaX + deltaY;
+      const knobName = this.draggedKnob.userData.name;
+
+      if (knobName === 'tuning') {
+        // Tuning knob moves frequency
+        const step = moveDelta * 0.0035;
+        this.draggedKnob.rotation.z -= moveDelta * 0.05;
+
+        // Trigger subtle mechanical ratchet ticks
+        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > 0.3) {
+          this.audioEngine.playSFX('knob-tick');
+          this.lastTuningTickAngle = this.draggedKnob.rotation.z;
+        }
+
+        let newFreq = this.audioEngine.frequency;
+        const band = this.audioEngine.currentBand;
+
+        if (band === 'FM') {
+          newFreq = Math.max(88.0, Math.min(108.0, newFreq + step * 20));
+        } else if (band === 'AM') {
+          newFreq = Math.max(530, Math.min(1600, newFreq + step * 1070));
+        } else if (band === 'SW') {
+          newFreq = Math.max(6.0, Math.min(18.0, newFreq + step * 12.0));
+        }
+
+        this.audioEngine.setFrequency(newFreq);
+        this.radio.setFrequency(newFreq, band);
+      } else if (knobName === 'volume') {
+        // Volume knob
+        const deltaVol = moveDelta * 0.005;
+        const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + deltaVol));
+        this.audioEngine.setVolume(newVol);
+        this.radio.setVolumeAngle(newVol);
+      } else if (knobName === 'tone') {
+        // Tone knob
+        const deltaTone = moveDelta * 0.005;
+        const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + deltaTone));
+        this.audioEngine.setTone(newTone);
+        this.radio.setToneAngle(newTone);
+      }
+
+      if (this.onStateChange) this.onStateChange();
+      return;
+    }
+
+    // Hover state raycasting for cursor and tooltips
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.radio.group.children, true);
+
+    if (intersects.length > 0) {
+      const target = this.findInteractiveParent(intersects[0].object);
+      if (target) {
+        document.body.style.cursor = target.userData.isKnob ? 'grab' : 'pointer';
+        this.hoveredObject = target;
+        this.updateTooltip(target);
+        return;
+      }
+    }
+
+    document.body.style.cursor = 'default';
+    this.hoveredObject = null;
+    this.updateTooltip(null);
+  }
+
+  onPointerUp() {
+    if (this.isDragging) {
+      this.isDragging = false;
+      this.draggedKnob = null;
+      this.controls.enabled = true;
+      document.body.style.cursor = 'default';
+    }
+  }
+
+  // Mouse wheel fine-tuning when hovering over knobs
+  onWheel(e) {
+    if (!this.hoveredObject || !this.hoveredObject.userData.isKnob) return;
+
+    e.preventDefault();
+    const knobName = this.hoveredObject.userData.name;
+    const delta = -Math.sign(e.deltaY) * 0.02;
+
+    if (knobName === 'tuning') {
+      const band = this.audioEngine.currentBand;
+      let newFreq = this.audioEngine.frequency;
+      if (band === 'FM') {
+        newFreq = Math.max(88.0, Math.min(108.0, newFreq + delta * 2.0));
+      } else if (band === 'AM') {
+        newFreq = Math.max(530, Math.min(1600, newFreq + delta * 40.0));
+      } else if (band === 'SW') {
+        newFreq = Math.max(6.0, Math.min(18.0, newFreq + delta * 0.5));
+      }
+      this.audioEngine.setFrequency(newFreq);
+      this.radio.setFrequency(newFreq, band);
+      this.hoveredObject.rotation.z += delta * 2.0;
+      this.audioEngine.playSFX('knob-tick');
+    } else if (knobName === 'volume') {
+      const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + delta));
+      this.audioEngine.setVolume(newVol);
+      this.radio.setVolumeAngle(newVol);
+    } else if (knobName === 'tone') {
+      const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + delta));
+      this.audioEngine.setTone(newTone);
+      this.radio.setToneAngle(newTone);
+    }
+
+    if (this.onStateChange) this.onStateChange();
+  }
+
+  updateTooltip(target) {
+    const tooltipEl = document.getElementById('tooltip');
+    if (!tooltipEl) return;
+
+    if (!target) {
+      tooltipEl.style.opacity = '0';
+      return;
+    }
+
+    let text = '';
+    if (target.userData.isKnob) {
+      if (target.userData.name === 'tuning') text = 'Tuning Dial — Click & drag or scroll to tune';
+      if (target.userData.name === 'volume') text = `Volume: ${Math.round(this.audioEngine.volume * 100)}% — Drag or scroll`;
+      if (target.userData.name === 'tone') text = `Klang / Tone — Drag or scroll`;
+    } else if (target.userData.isButton) {
+      text = `Band: ${target.userData.value} — Click to switch`;
+    } else if (target.userData.isSwitch) {
+      text = `Power: ${this.audioEngine.isPoweredOn ? 'ON' : 'OFF'} — Click to toggle`;
+    } else if (target.userData.isAntenna) {
+      text = `Telescopic Antenna — Click to ${this.radio.isAntennaExtended ? 'retract' : 'extend'}`;
+    }
+
+    tooltipEl.textContent = text;
+    tooltipEl.style.opacity = text ? '1' : '0';
+  }
+}

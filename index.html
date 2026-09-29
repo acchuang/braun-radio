@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BRAUN RT 20 — 3D Radio Receiver</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- 3D WebGL Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Realtime 3D Hover Tooltip -->
+  <div id="tooltip"></div>
+
+  <!-- UI Overlay -->
+  <div class="ui-overlay">
+    <!-- Top Brand Header -->
+    <header class="brand-header">
+      <div class="brand-logo-block">
+        <div class="brand-logo">BRAUN</div>
+        <div class="brand-subtitle">RT 20 / HI-FI RECEIVER</div>
+      </div>
+      <div class="brand-meta">
+        <div>DESIGN DIETER RAMS</div>
+        <div>GERMAN PRECISION ACOUSTICS</div>
+      </div>
+    </header>
+
+    <!-- Floating Live HUD Card -->
+    <div class="hud-card">
+      <div class="hud-top-row">
+        <span id="hud-power-indicator" class="power-badge off">STANDBY</span>
+        <span id="hud-stream-status" class="stream-badge standby">OFFLINE</span>
+        <div class="band-btn-group" style="margin-bottom: 0;">
+          <button class="band-btn active" data-band="FM">FM</button>
+          <button class="band-btn" data-band="AM">AM</button>
+          <button class="band-btn" data-band="SW">SW</button>
+          <button class="band-btn" data-band="AUX">AUX</button>
+        </div>
+      </div>
+
+      <div id="hud-frequency" class="hud-frequency">89.5 MHz</div>
+      <div id="hud-station-name" class="hud-station-name">Groove Salad (Chill & Downtempo)</div>
+      <div id="hud-genre" class="hud-genre">Ambient / Downtempo Beats & Grooves</div>
+
+      <!-- Signal Strength Meter -->
+      <div class="meter-group">
+        <div class="meter-label-row">
+          <span>Signal Strength</span>
+          <span id="signal-db">RF LOCK</span>
+        </div>
+        <div class="meter-track">
+          <div id="hud-signal-fill" class="meter-fill" style="width: 85%;"></div>
+        </div>
+      </div>
+
+      <!-- Dynamic Audio Output Level Meter -->
+      <div class="meter-group" style="margin-bottom: 18px;">
+        <div class="meter-label-row">
+          <span>Acoustic Output</span>
+          <span>VU DYNAMICS</span>
+        </div>
+        <div class="meter-track">
+          <div id="hud-level-fill" class="meter-fill" style="width: 0%; background-color: #191a1d;"></div>
+        </div>
+      </div>
+
+      <!-- Power Button -->
+      <button id="hud-power-btn" class="btn-primary">TURN ON</button>
+    </div>
+
+    <!-- Quick Interaction Instructions -->
+    <div class="guide-card">
+      <strong>Tactile 3D Controls</strong><br>
+      • Drag or scroll <strong>Knobs</strong> to tune & adjust<br>
+      • Click <strong>Power Switch</strong> or band buttons<br>
+      • Click <strong>Antenna</strong> to extend / retract<br>
+      • Drag background to orbit camera
+    </div>
+
+    <!-- Bottom Floating Dock -->
+    <nav class="bottom-dock">
+      <!-- Theme Selection -->
+      <div class="dock-group">
+        <button class="dock-btn active" data-theme="white" title="Classic Atelier White">
+          <span class="dock-color-circle white"></span> White
+        </button>
+        <button class="dock-btn" data-theme="black" title="Atelier Anthracite">
+          <span class="dock-color-circle black"></span> Black
+        </button>
+        <button class="dock-btn" data-theme="wood" title="RT 20 Wood & White">
+          <span class="dock-color-circle wood"></span> Wood
+        </button>
+      </div>
+
+      <div class="dock-divider"></div>
+
+      <!-- Camera Presets -->
+      <div class="dock-group">
+        <button class="dock-btn active" data-view="hero">Hero</button>
+        <button class="dock-btn" data-view="front">Front</button>
+        <button class="dock-btn" data-view="dial">Dial</button>
+        <button class="dock-btn" data-view="controls">Knobs</button>
+        <button class="dock-btn" data-view="back">Back</button>
+      </div>
+
+      <div class="dock-divider"></div>
+
+      <!-- Lighting & Extras -->
+      <div class="dock-group">
+        <button id="night-mode-toggle" class="dock-btn" title="Toggle Twilight / Dial Lamp Atmosphere">
+          🌙 Night
+        </button>
+        <button id="station-drawer-toggle" class="dock-btn" title="Open Station Guide">
+          📻 Stations
+        </button>
+        <button id="upload-audio-btn" class="dock-btn" title="Play your own audio file">
+          🎵 AUX In
+        </button>
+        <input type="file" id="audio-file-input" accept="audio/*" style="display: none;" />
+      </div>
+    </nav>
+  </div>
+
+  <!-- Sliding Station Guide Drawer -->
+  <aside id="station-drawer" class="station-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">FREQUENCY GUIDE</div>
+      <button class="drawer-close" onclick="document.getElementById('station-drawer').classList.remove('open')">✕</button>
+    </div>
+
+    <div class="station-list" id="station-list-items">
+      <!-- Generated dynamically by main.js -->
+    </div>
+
+    <div class="aux-upload-box" onclick="document.getElementById('audio-file-input').click()">
+      <strong>Drop Audio File Here</strong><br>
+      Play your MP3 / WAV via vintage Braun speaker
+    </div>
+  </aside>
+
+  <!-- Persistent HTML5 Audio Stream Element -->
+  <audio id="radio-audio-stream" preload="none" crossorigin="anonymous"></audio>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

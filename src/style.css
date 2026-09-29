@@ -1,0 +1,531 @@
+/* Braun Design System & Ulm School Aesthetics */
+
+:root {
+  --braun-orange: #ff5500;
+  --braun-dark: #191a1d;
+  --braun-grey: #6b6f76;
+  --braun-light-grey: #f2ede4;
+  --panel-bg: rgba(246, 244, 240, 0.82);
+  --panel-border: rgba(0, 0, 0, 0.09);
+  --text-primary: #191a1d;
+  --text-secondary: #747880;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background-color: #dedad4;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* UI Layer */
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 32px;
+}
+
+/* Header */
+.brand-header {
+  pointer-events: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.brand-logo-block {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.brand-logo {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.brand-meta {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* Floating Station HUD (Tuning Card) */
+.hud-card {
+  pointer-events: auto;
+  position: absolute;
+  top: 80px;
+  left: 32px;
+  width: 320px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.hud-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.power-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.power-badge.on {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.power-badge.off {
+  background: #f0f0f0;
+  color: #888888;
+  border: 1px solid #d0d0d0;
+}
+
+.stream-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.stream-badge.live {
+  background: #fff0eb;
+  color: var(--braun-orange);
+  border: 1px solid #ffccb8;
+  animation: pulseLive 2s infinite ease-in-out;
+}
+
+.stream-badge.buffering {
+  background: #fffde7;
+  color: #f57f17;
+  border: 1px solid #fff176;
+}
+
+.stream-badge.standby {
+  background: #f4f4f4;
+  color: #999999;
+  border: 1px solid #e0e0e0;
+}
+
+@keyframes pulseLive {
+  0% { opacity: 0.85; }
+  50% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0.85; }
+}
+
+.hud-frequency {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-station-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-genre {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* Signal Meter Bar in HUD */
+.meter-group {
+  margin-bottom: 16px;
+}
+
+.meter-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.meter-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background-color: var(--braun-orange);
+  transition: width 0.1s ease, background-color 0.2s ease;
+}
+
+/* Band Selector in HUD */
+.band-btn-group {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.band-btn {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-primary);
+}
+
+.band-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.band-btn.active {
+  background: var(--braun-dark);
+  color: #ffffff;
+  border-color: var(--braun-dark);
+}
+
+/* Power Button in HUD */
+.btn-primary {
+  width: 100%;
+  padding: 10px 0;
+  background: var(--braun-orange);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary.active {
+  background: #2b2d30;
+}
+
+/* Interactive Tooltip / Hint Bar */
+#tooltip {
+  pointer-events: none;
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(25, 26, 29, 0.88);
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+/* Bottom Control Dock */
+.bottom-dock {
+  pointer-events: auto;
+  align-self: center;
+  display: flex;
+  gap: 12px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--panel-border);
+  border-radius: 30px;
+  padding: 8px 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.dock-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.12);
+  margin: 0 4px;
+}
+
+.dock-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dock-btn.active {
+  background: var(--braun-dark);
+  color: #ffffff;
+}
+
+.dock-color-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dock-color-circle.white { background: #edebe6; border: 1px solid #bbb; }
+.dock-color-circle.black { background: #1a1b1d; }
+.dock-color-circle.wood { background: #d4be96; }
+
+/* Station Guide Drawer */
+.station-drawer {
+  pointer-events: auto;
+  position: absolute;
+  top: 0;
+  right: -360px;
+  width: 340px;
+  height: 100%;
+  background: var(--panel-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid var(--panel-border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.08);
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px;
+  z-index: 50;
+}
+
+.station-drawer.open {
+  right: 0;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.drawer-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.station-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.station-group-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--braun-orange);
+  margin: 14px 0 6px 0;
+  text-transform: uppercase;
+}
+
+.station-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.station-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.station-freq {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--braun-dark);
+  min-width: 65px;
+}
+
+.station-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.station-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.station-genre {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.station-play-btn {
+  font-size: 11px;
+  color: var(--braun-orange);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 85, 0, 0.08);
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.station-item:hover .station-play-btn {
+  background: var(--braun-orange);
+  color: #ffffff;
+}
+
+/* User Guide / Instructions Floater */
+.guide-card {
+  pointer-events: auto;
+  position: absolute;
+  bottom: 80px;
+  left: 32px;
+  max-width: 260px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.guide-card strong {
+  color: var(--text-primary);
+}
+
+/* Drag and Drop notice */
+.aux-upload-box {
+  margin-top: 16px;
+  border: 1px dashed var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.aux-upload-box:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
