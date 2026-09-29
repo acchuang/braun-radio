@@ -1,7 +1,7 @@
 {
   "name": "braun-radio",
   "version": "1.0.0",
-  "description": "Interactive 3D Braun RT 20 radio receiver built with Three.js and Web Audio API",
+  "description": "Interactive 3D radio collection featuring the Braun RT 20, Lexon Tykho, and Tivoli Model One built with Three.js and Web Audio API",
   "license": "MIT",
   "type": "module",
   "scripts": {
