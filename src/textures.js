@@ -620,3 +620,57 @@ export function createBackplateTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   return texture;
 }
+
+// 8. Authentic Scandinavian Ash / Teak Wood Grain Texture for RT 20 Sides
+export function createWoodTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  // Base warm blonde ash wood tone
+  const baseGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  baseGrad.addColorStop(0, '#cbb28b');
+  baseGrad.addColorStop(0.25, '#d6be97');
+  baseGrad.addColorStop(0.5, '#ceb58d');
+  baseGrad.addColorStop(0.75, '#debfa0');
+  baseGrad.addColorStop(1, '#cbb28b');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Subtle organic growth rings and wavy grain
+  for (let i = 0; i < 90; i++) {
+    const yCenter = (i / 90) * canvas.height;
+    ctx.beginPath();
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(125, 95, 60, 0.16)' : 'rgba(150, 115, 75, 0.08)';
+    ctx.lineWidth = 1.5 + Math.sin(i * 0.7) * 1.0;
+
+    ctx.moveTo(0, yCenter);
+    for (let x = 0; x <= canvas.width; x += 32) {
+      const wave = Math.sin(x * 0.005 + i * 0.4) * 8 + Math.sin(x * 0.015) * 4;
+      ctx.lineTo(x, yCenter + wave);
+    }
+    ctx.stroke();
+  }
+
+  // Fine microscopic wood pores / tracheid fibers
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const idx = (y * canvas.width + x) * 4;
+      // High-frequency subtle fibrous noise
+      const noise = (Math.random() - 0.5) * 16;
+      data[idx] = Math.min(255, Math.max(0, data[idx] + noise));
+      data[idx + 1] = Math.min(255, Math.max(0, data[idx + 1] + noise * 0.9));
+      data[idx + 2] = Math.min(255, Math.max(0, data[idx + 2] + noise * 0.7));
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+

@@ -6,7 +6,8 @@ import {
   createControlPanelTexture,
   createBrushedMetalTexture,
   createKnurlNormalMap,
-  createBackplateTexture
+  createBackplateTexture,
+  createWoodTexture
 } from './textures.js';
 
 /**
@@ -37,6 +38,9 @@ export class BraunRadio {
     this.dialLamp = null;
     this.dialMat = null;
     this.meterFaceMat = null;
+    this.dialLampTarget = 0;
+    this.dialMatTarget = 0;
+    this.meterFaceTarget = 0;
     this.antennaMast = null;
     this.isAntennaExtended = true;
 
@@ -55,6 +59,7 @@ export class BraunRadio {
     const controlPanelTex = createControlPanelTexture();
     const knurlTex = createKnurlNormalMap();
     const backplateTex = createBackplateTexture();
+    const woodTex = createWoodTexture();
 
     // 2. Base Materials
     this.materials.body = new THREE.MeshStandardMaterial({
@@ -64,9 +69,9 @@ export class BraunRadio {
     });
 
     this.materials.woodSides = new THREE.MeshStandardMaterial({
-      color: 0xd4be96,
-      roughness: 0.5,
-      metalness: 0.02
+      map: woodTex,
+      roughness: 0.42,
+      metalness: 0.04
     });
 
     this.materials.knobMetal = new THREE.MeshStandardMaterial({
@@ -627,9 +632,10 @@ export class BraunRadio {
     this.switches.power.rotation.x = on ? -0.2 : 0.2;
     this.switches.power.userData.state = on;
 
-    this.dialLamp.intensity = on ? 1.8 : 0;
-    this.dialMat.emissiveIntensity = on ? 0.42 : 0;
-    this.meterFaceMat.emissiveIntensity = on ? 0.28 : 0;
+    // Thermal target intensity (simulating 1960s incandescent tungsten bulb)
+    this.dialLampTarget = on ? 1.8 : 0;
+    this.dialMatTarget = on ? 0.42 : 0;
+    this.meterFaceTarget = on ? 0.28 : 0;
   }
 
   setFrequency(freq, band) {
@@ -710,6 +716,18 @@ export class BraunRadio {
   }
 
   update(delta, metrics) {
+    // Incandescent thermal filament rise (approx 150ms time constant)
+    const thermalSpeed = 1.0 - Math.exp(-delta * 9.0);
+    if (this.dialLamp) {
+      this.dialLamp.intensity = THREE.MathUtils.lerp(this.dialLamp.intensity, this.dialLampTarget, thermalSpeed);
+    }
+    if (this.dialMat) {
+      this.dialMat.emissiveIntensity = THREE.MathUtils.lerp(this.dialMat.emissiveIntensity, this.dialMatTarget, thermalSpeed);
+    }
+    if (this.meterFaceMat) {
+      this.meterFaceMat.emissiveIntensity = THREE.MathUtils.lerp(this.meterFaceMat.emissiveIntensity, this.meterFaceTarget, thermalSpeed);
+    }
+
     if (this.speakerCone && this.speakerDustCap) {
       const targetDisplacement = metrics.bassEnergy * 0.035;
       this.speakerCone.position.z = THREE.MathUtils.lerp(this.speakerCone.position.z, targetDisplacement, 0.4);

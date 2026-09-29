@@ -18,7 +18,7 @@ class SimpleTimer {
 }
 
 /**
- * Main Application: Three.js Scene Setup, Lighting, Camera Tweening & UI Binding
+ * Main Application: Three.js Scene Setup, Lighting, Camera Tweening, UI & Keyboard Controls
  */
 
 class App {
@@ -62,6 +62,8 @@ class App {
     };
     this.targetCameraPos = null;
     this.targetControlsTarget = null;
+    this.currentViewPreset = 'hero';
+    this.prevVolume = 0.75;
 
     // Lighting Mode: 'day' or 'night'
     this.isNightMode = false;
@@ -81,11 +83,18 @@ class App {
       this.radio,
       this.audioEngine,
       this.controls,
-      () => this.updateUI()
+      () => {
+        this.updateUI();
+        this.dismissHint();
+      }
     );
+
+    // Hook audio engine status changes
+    this.audioEngine.onStatusChange = () => this.updateUI();
 
     // UI & Events
     this.bindUI();
+    this.setupKeyboardShortcuts();
     this.parseURLParams();
     window.addEventListener('resize', this.onResize.bind(this));
 
@@ -144,7 +153,7 @@ class App {
   // Toggle Day / Night Lighting
   setLightingMode(isNight) {
     this.isNightMode = isNight;
-    const duration = 1.0;
+    document.body.classList.toggle('night-mode', isNight);
 
     if (isNight) {
       // Atmospheric warm twilight
@@ -161,12 +170,10 @@ class App {
       this.rimLight.intensity = 0.6;
       this.hemiLight.intensity = 0.25;
 
-      // Make dial window lamp brighter in dark room
+      // Make dial window lamp brighter in dark room with thermal target
       this.radio.dialLamp.distance = 2.5;
-      if (this.audioEngine.isPoweredOn) {
-        this.radio.dialLamp.intensity = 2.6;
-        this.radio.dialMat.emissiveIntensity = 0.65;
-      }
+      this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 2.6 : 0;
+      this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.65 : 0;
     } else {
       // Daytime bright studio
       this.scene.background.setHex(0xdedad4);
@@ -183,10 +190,8 @@ class App {
       this.hemiLight.intensity = 0.9;
 
       this.radio.dialLamp.distance = 1.8;
-      if (this.audioEngine.isPoweredOn) {
-        this.radio.dialLamp.intensity = 1.6;
-        this.radio.dialMat.emissiveIntensity = 0.38;
-      }
+      this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 1.8 : 0;
+      this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.42 : 0;
     }
   }
 
@@ -198,7 +203,9 @@ class App {
     if (theme && ['white', 'black', 'wood'].includes(theme)) {
       this.radio.setTheme(theme);
       document.querySelectorAll('[data-theme]').forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-theme') === theme);
+        const isCurrent = b.getAttribute('data-theme') === theme;
+        b.classList.toggle('active', isCurrent);
+        b.setAttribute('aria-pressed', isCurrent);
       });
     }
 
@@ -207,15 +214,21 @@ class App {
       this.camera.position.copy(this.cameraPresets[view].pos);
       this.controls.target.copy(this.cameraPresets[view].target);
       this.controls.update();
+      this.currentViewPreset = view;
       document.querySelectorAll('[data-view]').forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-view') === view);
+        const isCurrent = b.getAttribute('data-view') === view;
+        b.classList.toggle('active', isCurrent);
+        b.setAttribute('aria-pressed', isCurrent);
       });
     }
 
     const night = params.get('night');
     if (night === 'true' || night === '1') {
       const nightToggle = document.getElementById('night-mode-toggle');
-      if (nightToggle) nightToggle.classList.add('active');
+      if (nightToggle) {
+        nightToggle.classList.add('active');
+        nightToggle.setAttribute('aria-pressed', 'true');
+      }
       this.setLightingMode(true);
     }
 
@@ -228,8 +241,7 @@ class App {
 
     const drawer = params.get('drawer');
     if (drawer === 'open' || drawer === '1') {
-      const drawerEl = document.getElementById('station-drawer');
-      if (drawerEl) drawerEl.classList.add('open');
+      this.toggleDrawer(true);
     }
   }
 
@@ -237,39 +249,227 @@ class App {
   goToView(presetName) {
     const preset = this.cameraPresets[presetName];
     if (!preset) return;
+    this.currentViewPreset = presetName;
     this.targetCameraPos = preset.pos.clone();
     this.targetControlsTarget = preset.target.clone();
   }
 
-  // Bind HTML UI controls
-  bindUI() {
-    // Power toggle button on HUD
-    const hudPowerBtn = document.getElementById('hud-power-btn');
-    if (hudPowerBtn) {
-      hudPowerBtn.addEventListener('click', () => {
+  // Waveband switch helper
+  setBand(band) {
+    this.audioEngine.setBand(band);
+    this.radio.setActiveBand(band);
+    this.radio.setFrequency(this.audioEngine.frequency, band);
+    this.updateUI();
+    this.announceARIA(`Waveband switched to ${band}`);
+  }
+
+  // Screen reader announcements
+  announceARIA(msg) {
+    const el = document.getElementById('aria-status');
+    if (el) {
+      el.textContent = '';
+      setTimeout(() => { el.textContent = msg; }, 40);
+    }
+  }
+
+  // Toggle station drawer
+  toggleDrawer(open) {
+    const drawer = document.getElementById('station-drawer');
+    const backdrop = document.getElementById('drawer-backdrop');
+    const toggleBtn = document.getElementById('station-drawer-toggle');
+    if (!drawer) return;
+
+    const isOpen = open !== undefined ? open : !drawer.classList.contains('open');
+    drawer.classList.toggle('open', isOpen);
+    if (backdrop) backdrop.classList.toggle('active', isOpen);
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', isOpen);
+  }
+
+  // Toggle shortcuts modal
+  toggleShortcutsModal(open) {
+    const modal = document.getElementById('shortcuts-modal');
+    if (!modal) return;
+    const shouldOpen = open !== undefined ? open : modal.style.display === 'none';
+    modal.style.display = shouldOpen ? 'flex' : 'none';
+  }
+
+  // Close all open dialogs / drawers
+  closeAllOverlays() {
+    this.toggleDrawer(false);
+    this.toggleShortcutsModal(false);
+  }
+
+  // Dismiss onboarding hint
+  dismissHint() {
+    const hint = document.getElementById('onboarding-hint');
+    if (hint && hint.style.opacity !== '0') {
+      hint.style.opacity = '0';
+      hint.style.pointerEvents = 'none';
+      setTimeout(() => { hint.style.display = 'none'; }, 300);
+    }
+  }
+
+  // Bind universal keyboard shortcuts
+  setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const key = e.key;
+      const code = e.code;
+
+      // 1. Space: Toggle Power
+      if (code === 'Space') {
+        e.preventDefault();
         const nextState = !this.audioEngine.isPoweredOn;
         this.audioEngine.setPower(nextState);
         this.radio.setPower(nextState);
         this.updateUI();
-      });
-    }
+        this.dismissHint();
+        this.announceARIA(nextState ? 'Radio powered on' : 'Radio standby');
+        return;
+      }
 
+      // 2. Arrow Left / Right: Frequency Tuning
+      if (code === 'ArrowLeft' || code === 'ArrowRight') {
+        e.preventDefault();
+        const dir = code === 'ArrowRight' ? 1 : -1;
+        const mult = e.shiftKey ? 4.0 : 1.0;
+        const band = this.audioEngine.currentBand;
+        let delta = 0;
+        if (band === 'FM') delta = 0.1 * dir * mult;
+        else if (band === 'AM') delta = 10 * dir * mult;
+        else if (band === 'SW') delta = 0.05 * dir * mult;
+
+        let newFreq = this.audioEngine.frequency + delta;
+        if (band === 'FM') newFreq = Math.max(88.0, Math.min(108.0, newFreq));
+        else if (band === 'AM') newFreq = Math.max(530, Math.min(1600, newFreq));
+        else if (band === 'SW') newFreq = Math.max(6.0, Math.min(18.0, newFreq));
+
+        this.audioEngine.setFrequency(newFreq);
+        this.radio.setFrequency(newFreq, band);
+        this.audioEngine.playSFX('knob-tick');
+        this.updateUI();
+        this.dismissHint();
+        return;
+      }
+
+      // 3. Arrow Up / Down: Volume adjustment
+      if (code === 'ArrowUp' || code === 'ArrowDown') {
+        e.preventDefault();
+        const dir = code === 'ArrowUp' ? 0.05 : -0.05;
+        const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + dir));
+        this.audioEngine.setVolume(newVol);
+        this.radio.setVolumeAngle(newVol);
+        this.audioEngine.playSFX('knob-tick');
+        this.updateUI();
+        this.dismissHint();
+        this.announceARIA(`Volume ${Math.round(newVol * 100)}%`);
+        return;
+      }
+
+      // 4. Band Selection Keys: 1=FM, 2=AM, 3=SW, 4=AUX
+      if (key === '1') { this.setBand('FM'); return; }
+      if (key === '2') { this.setBand('AM'); return; }
+      if (key === '3') { this.setBand('SW'); return; }
+      if (key === '4') { this.setBand('AUX'); return; }
+
+      // 5. M: Mute / Unmute
+      if (code === 'KeyM') {
+        e.preventDefault();
+        if (this.audioEngine.volume > 0) {
+          this.prevVolume = this.audioEngine.volume;
+          this.audioEngine.setVolume(0);
+          this.radio.setVolumeAngle(0);
+          this.announceARIA('Audio muted');
+        } else {
+          const restore = this.prevVolume || 0.75;
+          this.audioEngine.setVolume(restore);
+          this.radio.setVolumeAngle(restore);
+          this.announceARIA(`Audio unmuted, volume ${Math.round(restore * 100)}%`);
+        }
+        this.audioEngine.playSFX('click');
+        this.updateUI();
+        return;
+      }
+
+      // 6. V: Cycle camera view presets
+      if (code === 'KeyV') {
+        e.preventDefault();
+        const presets = ['hero', 'front', 'dial', 'controls', 'back'];
+        const currIdx = presets.indexOf(this.currentViewPreset || 'hero');
+        const nextPreset = presets[(currIdx + 1) % presets.length];
+        this.goToView(nextPreset);
+        document.querySelectorAll('[data-view]').forEach(b => {
+          const isCurrent = b.getAttribute('data-view') === nextPreset;
+          b.classList.toggle('active', isCurrent);
+          b.setAttribute('aria-pressed', isCurrent);
+        });
+        this.announceARIA(`Camera view: ${nextPreset}`);
+        return;
+      }
+
+      // 7. N: Toggle Twilight / Night mode
+      if (code === 'KeyN') {
+        e.preventDefault();
+        const nightToggle = document.getElementById('night-mode-toggle');
+        if (nightToggle) {
+          nightToggle.classList.toggle('active');
+          const isNight = nightToggle.classList.contains('active');
+          nightToggle.setAttribute('aria-pressed', isNight);
+          this.setLightingMode(isNight);
+        }
+        return;
+      }
+
+      // 8. S: Toggle Station drawer
+      if (code === 'KeyS') {
+        e.preventDefault();
+        this.toggleDrawer();
+        return;
+      }
+
+      // 9. ?: Toggle Shortcuts modal
+      if (key === '?' || (e.shiftKey && code === 'Slash')) {
+        e.preventDefault();
+        this.toggleShortcutsModal();
+        return;
+      }
+
+      // 10. Escape: Close overlays
+      if (code === 'Escape') {
+        this.closeAllOverlays();
+        return;
+      }
+    });
+  }
+
+  // Bind HTML UI controls
+  bindUI() {
     // Camera view buttons
     document.querySelectorAll('[data-view]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-view]').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         this.goToView(btn.getAttribute('data-view'));
       });
     });
 
     // Theme buttons
     document.querySelectorAll('[data-theme]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        document.querySelectorAll('[data-theme]').forEach(b => b.classList.remove('active'));
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-theme]').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         const theme = btn.getAttribute('data-theme');
         this.radio.setTheme(theme);
+        this.announceARIA(`Cabinet theme: ${theme}`);
       });
     });
 
@@ -278,28 +478,41 @@ class App {
     if (nightToggle) {
       nightToggle.addEventListener('click', () => {
         nightToggle.classList.toggle('active');
-        this.setLightingMode(nightToggle.classList.contains('active'));
+        const isNight = nightToggle.classList.contains('active');
+        nightToggle.setAttribute('aria-pressed', isNight);
+        this.setLightingMode(isNight);
       });
     }
 
-    // Band selector buttons on HUD
-    document.querySelectorAll('[data-band]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const band = btn.getAttribute('data-band');
-        this.audioEngine.setBand(band);
-        this.radio.setActiveBand(band);
-        this.radio.setFrequency(this.audioEngine.frequency, band);
-        this.updateUI();
-      });
-    });
-
-    // Station list drawer toggle & clicks
+    // Station list drawer toggle & close & backdrop
     const stationDrawerBtn = document.getElementById('station-drawer-toggle');
-    const stationDrawer = document.getElementById('station-drawer');
-    if (stationDrawerBtn && stationDrawer) {
-      stationDrawerBtn.addEventListener('click', () => {
-        stationDrawer.classList.toggle('open');
-      });
+    const drawerCloseBtn = document.getElementById('drawer-close-btn');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+
+    if (stationDrawerBtn) {
+      stationDrawerBtn.addEventListener('click', () => this.toggleDrawer());
+    }
+    if (drawerCloseBtn) {
+      drawerCloseBtn.addEventListener('click', () => this.toggleDrawer(false));
+    }
+    if (drawerBackdrop) {
+      drawerBackdrop.addEventListener('click', () => this.closeAllOverlays());
+    }
+
+    // Shortcuts modal toggle & close
+    const shortcutsBtn = document.getElementById('shortcuts-modal-toggle');
+    const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
+    if (shortcutsBtn) {
+      shortcutsBtn.addEventListener('click', () => this.toggleShortcutsModal(true));
+    }
+    if (shortcutsCloseBtn) {
+      shortcutsCloseBtn.addEventListener('click', () => this.toggleShortcutsModal(false));
+    }
+
+    // Hint dismiss button
+    const hintDismissBtn = document.getElementById('hint-dismiss-btn');
+    if (hintDismissBtn) {
+      hintDismissBtn.addEventListener('click', () => this.dismissHint());
     }
 
     // Render station list items
@@ -308,13 +521,22 @@ class App {
     // Audio file uploader (AUX mode)
     const fileInput = document.getElementById('audio-file-input');
     const uploadBtn = document.getElementById('upload-audio-btn');
+    const auxUploadBox = document.getElementById('aux-upload-box');
+
     if (uploadBtn && fileInput) {
       uploadBtn.addEventListener('click', () => fileInput.click());
+    }
+    if (auxUploadBox && fileInput) {
+      auxUploadBox.addEventListener('click', () => fileInput.click());
+    }
+    if (fileInput) {
       fileInput.addEventListener('change', e => {
         if (e.target.files && e.target.files[0]) {
           this.audioEngine.loadUserAudioFile(e.target.files[0]);
           this.radio.setActiveBand('AUX');
           this.updateUI();
+          this.toggleDrawer(false);
+          this.announceARIA('Playing personal audio via AUX');
         }
       });
     }
@@ -327,6 +549,7 @@ class App {
         this.audioEngine.loadUserAudioFile(e.dataTransfer.files[0]);
         this.radio.setActiveBand('AUX');
         this.updateUI();
+        this.announceARIA('Playing dropped audio file via AUX');
       }
     });
 
@@ -355,6 +578,8 @@ class App {
       bandStations.forEach(st => {
         const item = document.createElement('div');
         item.className = 'station-item';
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
         const freqText = this.audioEngine.formatFreq(st.freq, band);
         item.innerHTML = `
           <div class="station-freq">${freqText}</div>
@@ -362,78 +587,73 @@ class App {
             <div class="station-name">${st.name}</div>
             <div class="station-genre">${st.genre}</div>
           </div>
-          <div class="station-play-btn" title="Tune & Play">▶</div>
+          <div class="station-play-btn" title="Tune & Play" aria-hidden="true">▶</div>
         `;
-        item.addEventListener('click', () => {
+        const onSelect = () => {
           this.audioEngine.tuneToStation(st, band);
           this.radio.setActiveBand(band);
           this.radio.setFrequency(st.freq, band);
           this.updateUI();
-          const drawer = document.getElementById('station-drawer');
-          if (drawer) drawer.classList.remove('open');
+          this.toggleDrawer(false);
+          this.announceARIA(`Tuned to ${st.name} at ${freqText}`);
+        };
+        item.addEventListener('click', onSelect);
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+          }
         });
         listEl.appendChild(item);
       });
     });
   }
 
-  // Update HUD and overlay elements
+  // Update companion ticker and status pills
   updateUI() {
     const info = this.audioEngine.getCurrentStationInfo();
 
-    // Frequency display
-    const freqEl = document.getElementById('hud-frequency');
+    // 1. Header Status Indicators
+    const powerPill = document.getElementById('power-indicator-pill');
+    if (powerPill) {
+      const isPower = this.audioEngine.isPoweredOn;
+      powerPill.className = `status-indicator ${isPower ? 'on' : 'standby'}`;
+      powerPill.textContent = isPower ? 'POWER ON' : 'STANDBY';
+    }
+
+    const bandPill = document.getElementById('band-indicator-pill');
+    if (bandPill) {
+      bandPill.textContent = this.audioEngine.currentBand;
+    }
+
+    // 2. Whisper-Quiet Now-Playing Companion Ticker
+    const freqEl = document.getElementById('ticker-freq');
     if (freqEl) freqEl.textContent = info.freq;
 
-    // Station Name
-    const nameEl = document.getElementById('hud-station-name');
+    const nameEl = document.getElementById('ticker-name');
     if (nameEl) nameEl.textContent = info.name;
 
-    // Genre
-    const genreEl = document.getElementById('hud-genre');
+    const genreEl = document.getElementById('ticker-genre');
     if (genreEl) genreEl.textContent = info.genre;
 
-    // Power status badge & button
-    const powerBadge = document.getElementById('hud-power-indicator');
-    const powerBtn = document.getElementById('hud-power-btn');
-    if (powerBadge) {
-      powerBadge.className = `power-badge ${this.audioEngine.isPoweredOn ? 'on' : 'off'}`;
-      powerBadge.textContent = this.audioEngine.isPoweredOn ? 'POWER ON' : 'STANDBY';
-    }
-    if (powerBtn) {
-      powerBtn.textContent = this.audioEngine.isPoweredOn ? 'TURN OFF' : 'TURN ON';
-      powerBtn.classList.toggle('active', this.audioEngine.isPoweredOn);
-    }
-
-    // Stream status indicator badge
-    const streamStatusEl = document.getElementById('hud-stream-status');
-    if (streamStatusEl) {
+    const statusBadge = document.getElementById('ticker-status-badge');
+    if (statusBadge) {
       if (!this.audioEngine.isPoweredOn) {
-        streamStatusEl.className = 'stream-badge standby';
-        streamStatusEl.textContent = 'OFFLINE';
+        statusBadge.className = 'ticker-badge standby';
+        statusBadge.textContent = 'STANDBY';
       } else if (info.status === 'BUFFERING...') {
-        streamStatusEl.className = 'stream-badge buffering';
-        streamStatusEl.textContent = 'BUFFERING';
-      } else if (info.status === 'LIVE STREAM' || (info.tuned && this.audioEngine.currentSignalStrength > 0.3)) {
-        streamStatusEl.className = 'stream-badge live';
-        streamStatusEl.textContent = '● LIVE';
+        statusBadge.className = 'ticker-badge buffering';
+        statusBadge.textContent = 'BUFFERING';
+      } else if (info.status && info.status.includes('FALLBACK')) {
+        statusBadge.className = 'ticker-badge buffering';
+        statusBadge.textContent = 'FALLBACK';
+      } else if (info.status === 'LIVE STREAM' || (info.tuned && this.audioEngine.currentSignalStrength > 0.25)) {
+        statusBadge.className = 'ticker-badge live';
+        statusBadge.textContent = '● LIVE';
       } else {
-        streamStatusEl.className = 'stream-badge standby';
-        streamStatusEl.textContent = 'TUNING';
+        statusBadge.className = 'ticker-badge standby';
+        statusBadge.textContent = 'TUNING';
       }
-    }
-
-    // Active band highlight in HUD
-    document.querySelectorAll('[data-band]').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-band') === this.audioEngine.currentBand);
-    });
-
-    // Signal meter bar in HUD
-    const signalBar = document.getElementById('hud-signal-fill');
-    if (signalBar) {
-      const pct = Math.round(this.audioEngine.currentSignalStrength * 100);
-      signalBar.style.width = `${pct}%`;
-      signalBar.style.backgroundColor = pct > 60 ? '#ff5500' : '#888888';
     }
   }
 
@@ -464,15 +684,8 @@ class App {
     // Query real-time audio metrics (energy, level, signal)
     const metrics = this.audioEngine.updateMetrics();
 
-    // Update 3D radio elements (speaker vibration & VU meter needle)
+    // Update 3D radio elements (speaker vibration, dial lamp thermal rise, & VU meter needle)
     this.radio.update(delta, metrics);
-
-    // Update live signal and volume meters in HUD
-    const meterFill = document.getElementById('hud-level-fill');
-    if (meterFill) {
-      const pct = Math.min(100, Math.round(metrics.level * 180));
-      meterFill.style.width = `${pct}%`;
-    }
 
     this.renderer.render(this.scene, this.camera);
   }

@@ -29,6 +29,10 @@ export class AudioEngine {
     this.activeStation = null;
     this.isBuffering = false;
     this.isPlaying = false;
+    this.streamError = false;
+    this.isFallbackActive = false;
+    this.streamWatchdog = null;
+    this.onStatusChange = null;
     this.antennaReception = 1.0;
 
     // Real-time audio metrics
@@ -196,14 +200,51 @@ export class AudioEngine {
     }
     this.audioEl = audio;
 
-    // Attach stream event listeners for buffering state
+    // Attach stream event listeners for buffering state and error recovery
     this.audioEl.addEventListener('waiting', () => {
       this.isBuffering = true;
+      clearTimeout(this.streamWatchdog);
+      this.streamWatchdog = setTimeout(() => {
+        if (this.isBuffering && this.isPoweredOn && this.currentSignalStrength > 0.2) {
+          console.warn('Icecast stream buffering timed out (>4.5s); activating warm procedural fallback.');
+          this.streamError = true;
+          this.enableFallbackSynth(true);
+          if (this.onStatusChange) this.onStatusChange();
+        }
+      }, 4500);
     });
+
     this.audioEl.addEventListener('playing', () => {
+      clearTimeout(this.streamWatchdog);
       this.isBuffering = false;
       this.isPlaying = true;
+      this.streamError = false;
+      this.enableFallbackSynth(false);
+      if (this.onStatusChange) this.onStatusChange();
     });
+
+    this.audioEl.addEventListener('error', (e) => {
+      console.warn('Icecast stream network error; engaging procedural fallback:', e);
+      clearTimeout(this.streamWatchdog);
+      this.streamError = true;
+      this.isBuffering = false;
+      this.enableFallbackSynth(true);
+      if (this.onStatusChange) this.onStatusChange();
+    });
+
+    this.audioEl.addEventListener('stalled', () => {
+      if (this.isPoweredOn && this.currentSignalStrength > 0.2) {
+        clearTimeout(this.streamWatchdog);
+        this.streamWatchdog = setTimeout(() => {
+          if (!this.isPlaying && this.isPoweredOn) {
+            this.streamError = true;
+            this.enableFallbackSynth(true);
+            if (this.onStatusChange) this.onStatusChange();
+          }
+        }, 3500);
+      }
+    });
+
     this.audioEl.addEventListener('pause', () => {
       this.isPlaying = false;
     });
@@ -250,9 +291,10 @@ export class AudioEngine {
       console.warn('MediaElementSource error, using direct playback fallback:', err);
     }
 
-    // 6. Build Static and Heterodyne generators
+    // 6. Build Static, Heterodyne, and Procedural Synth generators
     this.buildNoiseGenerator();
     this.buildHeterodyneGenerator();
+    this.buildProceduralSynth();
 
     // Wiring:
     // streamSource -> bandHighpass -> bandLowpass -> stationGain ---\
@@ -323,6 +365,44 @@ export class AudioEngine {
 
     this.heterodyneOsc.connect(this.heterodyneGain);
     this.heterodyneOsc.start();
+  }
+
+  // Generative Warm Ambient Synth Fallback (activated on stream dropout or offline)
+  buildProceduralSynth() {
+    this.synthGain = this.ctx.createGain();
+    this.synthGain.gain.setValueAtTime(0, this.ctx.currentTime);
+    this.synthGain.connect(this.bandHighpass);
+
+    // Warm pentatonic chord frequencies (F minor / Ab major: F3, Ab3, C4, Eb4, G4)
+    const chordFreqs = [174.61, 207.65, 261.63, 311.13, 392.00];
+    this.synthOscs = chordFreqs.map((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const oscGain = this.ctx.createGain();
+      osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+      oscGain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+      osc.connect(oscGain);
+      oscGain.connect(this.synthGain);
+      osc.start();
+      return { osc, gain: oscGain };
+    });
+
+    // Slow LFO for organic breathing modulation
+    this.synthLFO = this.ctx.createOscillator();
+    this.synthLFOGain = this.ctx.createGain();
+    this.synthLFO.frequency.setValueAtTime(0.14, this.ctx.currentTime);
+    this.synthLFOGain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+    this.synthLFO.connect(this.synthLFOGain);
+    this.synthLFOGain.connect(this.synthGain.gain);
+    this.synthLFO.start();
+  }
+
+  enableFallbackSynth(enabled) {
+    if (!this.synthGain || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.isFallbackActive = enabled;
+    this.synthGain.gain.cancelScheduledValues(now);
+    this.synthGain.gain.setTargetAtTime(enabled ? 0.35 : 0, now, 0.4);
   }
 
   // Play mechanical sound effects
@@ -547,11 +627,24 @@ export class AudioEngine {
     if (!this.audioEl) return;
 
     this.isBuffering = true;
+    this.streamError = false;
+    this.enableFallbackSynth(false);
+
+    clearTimeout(this.streamWatchdog);
+    this.streamWatchdog = setTimeout(() => {
+      if (this.isBuffering && this.isPoweredOn && this.currentSignalStrength > 0.2) {
+        console.warn('Icecast stream buffering timed out (>4.5s); activating warm procedural fallback.');
+        this.streamError = true;
+        this.enableFallbackSynth(true);
+        if (this.onStatusChange) this.onStatusChange();
+      }
+    }, 4500);
 
     // Check if same URL is already playing
     if (this.audioEl.src === station.url && !this.audioEl.paused) {
       this.isBuffering = false;
       this.isPlaying = true;
+      clearTimeout(this.streamWatchdog);
       return;
     }
 
@@ -564,8 +657,12 @@ export class AudioEngine {
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
+          clearTimeout(this.streamWatchdog);
           this.isBuffering = false;
           this.isPlaying = true;
+          this.streamError = false;
+          this.enableFallbackSynth(false);
+          if (this.onStatusChange) this.onStatusChange();
         })
         .catch(err => {
           console.warn('Stream play notice (waiting for user gesture or buffering):', err.message);
@@ -664,17 +761,30 @@ export class AudioEngine {
 
     if (this.activeStation && this.currentSignalStrength > 0.25) {
       let statusText = 'LOCKED';
-      if (this.isBuffering) statusText = 'BUFFERING...';
+      if (this.isFallbackActive) statusText = 'AMBIENT FALLBACK';
+      else if (this.isBuffering) statusText = 'BUFFERING...';
       else if (this.isPlaying) statusText = 'LIVE STREAM';
 
       return {
         band: this.currentBand,
         freq: this.formatFreq(this.activeStation.freq, this.currentBand),
-        name: this.activeStation.name,
-        genre: this.activeStation.genre,
+        name: this.isFallbackActive ? `${this.activeStation.name} (Offline)` : this.activeStation.name,
+        genre: this.isFallbackActive ? 'Procedural Ambient Synth Backup' : this.activeStation.genre,
         tuned: true,
         signal: this.currentSignalStrength,
         status: statusText
+      };
+    }
+
+    if (this.isFallbackActive) {
+      return {
+        band: this.currentBand,
+        freq: this.formatFreq(this.frequency, this.currentBand),
+        name: 'Procedural Ambient Synth',
+        genre: 'Generative Analog Atmosphere (Offline)',
+        tuned: true,
+        signal: this.currentSignalStrength,
+        status: 'FALLBACK ACTIVE'
       };
     }
 

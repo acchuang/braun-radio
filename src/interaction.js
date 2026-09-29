@@ -18,11 +18,15 @@ export class InteractionManager {
     // Dragging state
     this.isDragging = false;
     this.draggedKnob = null;
+    this.knobScreenCenter = { x: 0, y: 0 };
+    this.lastPointerAngle = 0;
     this.lastMousePos = { x: 0, y: 0 };
     this.hoveredObject = null;
 
-    // Last knob tick sound position tracking
+    // Knob detent tick tracking
     this.lastTuningTickAngle = 0;
+    this.lastVolumeTickVal = 0.75;
+    this.lastToneTickVal = 0.5;
 
     this.setupListeners();
   }
@@ -66,6 +70,17 @@ export class InteractionManager {
           this.draggedKnob = target;
           this.controls.enabled = false; // pause orbit controls while twisting knob
           this.lastMousePos = { x: e.clientX, y: e.clientY };
+
+          // Project knob 3D center to 2D screen coordinates for circular rotary drag
+          const knobWorldPos = new THREE.Vector3();
+          target.getWorldPosition(knobWorldPos);
+          const projected = knobWorldPos.clone().project(this.camera);
+          this.knobScreenCenter = {
+            x: ((projected.x + 1) / 2) * rect.width + rect.left,
+            y: ((-projected.y + 1) / 2) * rect.height + rect.top
+          };
+          this.lastPointerAngle = Math.atan2(e.clientY - this.knobScreenCenter.y, e.clientX - this.knobScreenCenter.x);
+
           document.body.style.cursor = 'grabbing';
           e.preventDefault();
           return;
@@ -109,20 +124,29 @@ export class InteractionManager {
 
     // Handle Active Knob Dragging
     if (this.isDragging && this.draggedKnob) {
+      // 1. Calculate true rotary angle delta around projected knob center
+      const currentAngle = Math.atan2(e.clientY - this.knobScreenCenter.y, e.clientX - this.knobScreenCenter.x);
+      let angleDelta = currentAngle - this.lastPointerAngle;
+      while (angleDelta > Math.PI) angleDelta -= 2 * Math.PI;
+      while (angleDelta < -Math.PI) angleDelta += 2 * Math.PI;
+      this.lastPointerAngle = currentAngle;
+
       const deltaX = e.clientX - this.lastMousePos.x;
       const deltaY = this.lastMousePos.y - e.clientY; // up is positive
       this.lastMousePos = { x: e.clientX, y: e.clientY };
 
-      const moveDelta = deltaX + deltaY;
+      // Directional move delta: circular arc rotation blended with intuitive upward/tangential drag
+      const linearDelta = (deltaX + deltaY) * 0.012;
+      const moveDelta = (Math.abs(angleDelta) > 0.005 ? angleDelta * 1.8 : 0) + linearDelta;
       const knobName = this.draggedKnob.userData.name;
 
       if (knobName === 'tuning') {
         // Tuning knob moves frequency
-        const step = moveDelta * 0.0035;
-        this.draggedKnob.rotation.z -= moveDelta * 0.05;
+        const step = moveDelta * 0.08;
+        this.draggedKnob.rotation.z -= moveDelta * 0.8;
 
-        // Trigger subtle mechanical ratchet ticks
-        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > 0.3) {
+        // Trigger mechanical ratchet ticks
+        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > 0.15) {
           this.audioEngine.playSFX('knob-tick');
           this.lastTuningTickAngle = this.draggedKnob.rotation.z;
         }
@@ -142,16 +166,28 @@ export class InteractionManager {
         this.radio.setFrequency(newFreq, band);
       } else if (knobName === 'volume') {
         // Volume knob
-        const deltaVol = moveDelta * 0.005;
+        const deltaVol = moveDelta * 0.12;
         const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + deltaVol));
         this.audioEngine.setVolume(newVol);
         this.radio.setVolumeAngle(newVol);
+
+        // Tactile detent tick on volume increments
+        if (Math.abs(newVol - this.lastVolumeTickVal) > 0.08) {
+          this.audioEngine.playSFX('knob-tick');
+          this.lastVolumeTickVal = newVol;
+        }
       } else if (knobName === 'tone') {
         // Tone knob
-        const deltaTone = moveDelta * 0.005;
+        const deltaTone = moveDelta * 0.12;
         const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + deltaTone));
         this.audioEngine.setTone(newTone);
         this.radio.setToneAngle(newTone);
+
+        // Tactile detent tick on tone increments
+        if (Math.abs(newTone - this.lastToneTickVal) > 0.08) {
+          this.audioEngine.playSFX('knob-tick');
+          this.lastToneTickVal = newTone;
+        }
       }
 
       if (this.onStateChange) this.onStateChange();
@@ -212,10 +248,12 @@ export class InteractionManager {
       const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + delta));
       this.audioEngine.setVolume(newVol);
       this.radio.setVolumeAngle(newVol);
+      this.audioEngine.playSFX('knob-tick');
     } else if (knobName === 'tone') {
       const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + delta));
       this.audioEngine.setTone(newTone);
       this.radio.setToneAngle(newTone);
+      this.audioEngine.playSFX('knob-tick');
     }
 
     if (this.onStateChange) this.onStateChange();
