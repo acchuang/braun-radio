@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { BraunRadio } from './radioModel.js';
+import { RADIO_MODELS, BraunRadio, LexonTykho, TivoliModelOne } from './models/index.js';
 import { AudioEngine } from './audioEngine.js';
 import { InteractionManager } from './interaction.js';
 
@@ -52,14 +52,20 @@ class App {
     this.controls.maxDistance = 9.0;
     this.controls.target.set(0, 0, 0);
 
-    // Camera preset definitions
-    this.cameraPresets = {
-      hero: { pos: new THREE.Vector3(1.4, 1.1, 5.0), target: new THREE.Vector3(0, 0, 0) },
-      front: { pos: new THREE.Vector3(0, 0, 4.6), target: new THREE.Vector3(0, 0, 0) },
-      dial: { pos: new THREE.Vector3(0.65, 0.40, 2.2), target: new THREE.Vector3(0.65, 0.40, 0.6) },
-      controls: { pos: new THREE.Vector3(0.7, -0.3, 2.3), target: new THREE.Vector3(0.7, -0.3, 0.6) },
-      back: { pos: new THREE.Vector3(0, 0.3, -4.6), target: new THREE.Vector3(0, 0, 0) }
+    // Audio & Radio Models
+    this.audioEngine = new AudioEngine();
+
+    // Multi-Model Collection
+    this.radioModels = {
+      braun: new BraunRadio(),
+      lexon: new LexonTykho(),
+      tivoli: new TivoliModelOne()
     };
+    this.currentModelId = 'braun';
+    this.radio = this.radioModels.braun;
+    this.cameraPresets = this.radio.cameraPresets;
+    this.scene.add(this.radio.group);
+
     this.targetCameraPos = null;
     this.targetControlsTarget = null;
     this.currentViewPreset = 'hero';
@@ -67,11 +73,6 @@ class App {
 
     // Lighting Mode: 'day' or 'night'
     this.isNightMode = false;
-
-    // Audio & Radio Models
-    this.audioEngine = new AudioEngine();
-    this.radio = new BraunRadio();
-    this.scene.add(this.radio.group);
 
     // Studio Environment (Table, Lights, Shadows)
     this.setupEnvironment();
@@ -170,10 +171,12 @@ class App {
       this.rimLight.intensity = 0.6;
       this.hemiLight.intensity = 0.25;
 
-      // Make dial window lamp brighter in dark room with thermal target
-      this.radio.dialLamp.distance = 2.5;
-      this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 2.6 : 0;
-      this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.65 : 0;
+      // Make dial window lamp brighter in dark room with thermal target (if model has dialLamp)
+      if (this.radio.dialLamp) {
+        this.radio.dialLamp.distance = 2.5;
+        this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 2.6 : 0;
+        this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.65 : 0;
+      }
     } else {
       // Daytime bright studio
       this.scene.background.setHex(0xdedad4);
@@ -189,18 +192,27 @@ class App {
       this.rimLight.intensity = 1.4;
       this.hemiLight.intensity = 0.9;
 
-      this.radio.dialLamp.distance = 1.8;
-      this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 1.8 : 0;
-      this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.42 : 0;
+      if (this.radio.dialLamp) {
+        this.radio.dialLamp.distance = 1.8;
+        this.radio.dialLampTarget = this.audioEngine.isPoweredOn ? 1.8 : 0;
+        this.radio.dialMatTarget = this.audioEngine.isPoweredOn ? 0.42 : 0;
+      }
     }
   }
 
-  // Parse URL Parameters (e.g. ?theme=wood&view=dial&night=true&power=on)
+  // Parse URL Parameters (e.g. ?model=lexon&theme=olive&view=dial&night=true&power=on)
   parseURLParams() {
     const params = new URLSearchParams(window.location.search);
 
+    const model = params.get('model');
+    if (model && this.radioModels[model]) {
+      this.switchModel(model, true);
+    } else {
+      this.renderThemeButtons();
+    }
+
     const theme = params.get('theme');
-    if (theme && ['white', 'black', 'wood'].includes(theme)) {
+    if (theme) {
       this.radio.setTheme(theme);
       document.querySelectorAll('[data-theme]').forEach(b => {
         const isCurrent = b.getAttribute('data-theme') === theme;
@@ -243,6 +255,103 @@ class App {
     if (drawer === 'open' || drawer === '1') {
       this.toggleDrawer(true);
     }
+  }
+
+  // Switch between iconic radio models
+  switchModel(modelId, immediate = false) {
+    if (!this.radioModels[modelId]) return;
+    if (this.currentModelId === modelId && !immediate) return;
+
+    const oldRadio = this.radio;
+    const newRadio = this.radioModels[modelId];
+
+    this.scene.remove(oldRadio.group);
+    this.scene.add(newRadio.group);
+
+    this.currentModelId = modelId;
+    this.radio = newRadio;
+    this.interaction.setRadio(this.radio);
+
+    // Sync current audio parameters to new model
+    this.radio.setPower(this.audioEngine.isPoweredOn);
+    this.radio.setActiveBand(this.audioEngine.currentBand);
+    this.radio.setFrequency(this.audioEngine.frequency, this.audioEngine.currentBand);
+    this.radio.setVolumeAngle(this.audioEngine.volume);
+    this.radio.setToneAngle(this.audioEngine.tone);
+
+    // Adjust table position to match radio dimensions
+    this.tableMesh.position.y = -this.radio.height / 2 - 0.05;
+
+    // Update camera presets tailored to this model
+    this.cameraPresets = this.radio.cameraPresets;
+
+    // Re-frame camera smoothly to current view
+    this.goToView(this.currentViewPreset || 'hero');
+
+    // Update DOM Header Branding
+    const brandLogoEl = document.getElementById('brand-logo');
+    const brandSubEl = document.getElementById('brand-subtitle');
+    if (brandLogoEl) brandLogoEl.textContent = this.radio.modelName;
+    if (brandSubEl) brandSubEl.textContent = this.radio.modelSubtitle;
+
+    // Update Model Selector Tab states
+    document.querySelectorAll('.model-tab').forEach(tab => {
+      const isSelected = tab.getAttribute('data-model') === modelId;
+      tab.classList.toggle('active', isSelected);
+      tab.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    });
+
+    // Populate theme buttons for this model
+    this.renderThemeButtons();
+
+    // Re-apply night mode dial lamp settings
+    this.setLightingMode(this.isNightMode);
+
+    // Update URL query parameter without page reload
+    const url = new URL(window.location);
+    url.searchParams.set('model', modelId);
+    window.history.replaceState({}, '', url);
+
+    this.announceARIA(`Switched to ${this.radio.modelName} ${this.radio.modelSubtitle}`);
+    this.updateUI();
+  }
+
+  // Populate chassis theme dock buttons dynamically per active model
+  renderThemeButtons() {
+    const container = document.getElementById('theme-selector-group');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const themes = this.radio.availableThemes || [];
+    themes.forEach((th) => {
+      const btn = document.createElement('button');
+      const isCurrent = th.id === this.radio.currentTheme;
+      btn.className = `dock-btn ${isCurrent ? 'active' : ''}`;
+      btn.setAttribute('data-theme', th.id);
+      btn.setAttribute('title', th.title || th.label);
+      btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+
+      const circle = document.createElement('span');
+      circle.className = 'dock-color-circle';
+      circle.style.backgroundColor = th.color;
+      circle.setAttribute('aria-hidden', 'true');
+
+      btn.appendChild(circle);
+      btn.appendChild(document.createTextNode(' ' + th.label));
+
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('[data-theme]').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        this.radio.setTheme(th.id);
+        this.announceARIA(`Chassis theme: ${th.label}`);
+      });
+
+      container.appendChild(btn);
+    });
   }
 
   // Camera transition to preset
@@ -408,6 +517,15 @@ class App {
         return;
       }
 
+      // 6b. X: Cycle Iconic Radio Designs
+      if (code === 'KeyX') {
+        e.preventDefault();
+        const modelIds = Object.keys(this.radioModels);
+        const nextIdx = (modelIds.indexOf(this.currentModelId) + 1) % modelIds.length;
+        this.switchModel(modelIds[nextIdx]);
+        return;
+      }
+
       // 7. N: Toggle Twilight / Night mode
       if (code === 'KeyN') {
         e.preventDefault();
@@ -445,6 +563,14 @@ class App {
 
   // Bind HTML UI controls
   bindUI() {
+    // Iconic Radio Model Switcher Tabs
+    document.querySelectorAll('.model-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const modelId = btn.getAttribute('data-model');
+        this.switchModel(modelId);
+      });
+    });
+
     // Camera view buttons
     document.querySelectorAll('[data-view]').forEach(btn => {
       btn.addEventListener('click', () => {

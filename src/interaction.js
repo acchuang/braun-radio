@@ -31,6 +31,13 @@ export class InteractionManager {
     this.setupListeners();
   }
 
+  setRadio(newRadio) {
+    this.radio = newRadio;
+    this.isDragging = false;
+    this.draggedKnob = null;
+    this.hoveredObject = null;
+  }
+
   setupListeners() {
     const dom = this.renderer.domElement;
 
@@ -64,7 +71,7 @@ export class InteractionManager {
     if (intersects.length > 0) {
       const target = this.findInteractiveParent(intersects[0].object);
       if (target) {
-        // 1. Knob Interaction
+        // 1. Knob Interaction (Rotary dials, 5:1 wheels, and twist-antennas)
         if (target.userData.isKnob) {
           this.isDragging = true;
           this.draggedKnob = target;
@@ -86,12 +93,34 @@ export class InteractionManager {
           return;
         }
 
-        // 2. Band Button Click
+        // 2. Band Button Click (Direct band switch)
         if (target.userData.isButton && target.userData.type === 'band') {
           const band = target.userData.value;
           this.audioEngine.setBand(band);
           this.radio.setActiveBand(band);
           this.radio.setFrequency(this.audioEngine.frequency, band);
+          if (this.onStateChange) this.onStateChange();
+          return;
+        }
+
+        // 2b. Band Toggle Button (e.g. Tykho FM / AM toggle)
+        if (target.userData.isButton && target.userData.type === 'band-toggle') {
+          const nextBand = this.audioEngine.currentBand === 'FM' ? 'AM' : 'FM';
+          this.audioEngine.setBand(nextBand);
+          this.radio.setActiveBand(nextBand);
+          this.radio.setFrequency(this.audioEngine.frequency, nextBand);
+          this.audioEngine.playSFX('click');
+          if (this.onStateChange) this.onStateChange();
+          return;
+        }
+
+        // 2c. Step Volume Button (e.g. Tykho + / - buttons)
+        if (target.userData.isButton && target.userData.type === 'volume-step') {
+          const delta = (target.userData.dir || 1) * 0.08;
+          const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + delta));
+          this.audioEngine.setVolume(newVol);
+          this.radio.setVolumeAngle(newVol);
+          this.audioEngine.playSFX('knob-tick');
           if (this.onStateChange) this.onStateChange();
           return;
         }
@@ -142,11 +171,13 @@ export class InteractionManager {
 
       if (knobName === 'tuning') {
         // Tuning knob moves frequency
-        const step = moveDelta * 0.08;
-        this.draggedKnob.rotation.z -= moveDelta * 0.8;
+        const isGeared = this.draggedKnob.userData.isGeared;
+        const gearRatio = isGeared ? 0.35 : 1.0;
+        const step = moveDelta * 0.08 * gearRatio;
+        this.draggedKnob.rotation.z -= moveDelta * 0.8 * gearRatio;
 
         // Trigger mechanical ratchet ticks
-        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > 0.15) {
+        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > (isGeared ? 0.08 : 0.15)) {
           this.audioEngine.playSFX('knob-tick');
           this.lastTuningTickAngle = this.draggedKnob.rotation.z;
         }
@@ -187,6 +218,43 @@ export class InteractionManager {
         if (Math.abs(newTone - this.lastToneTickVal) > 0.08) {
           this.audioEngine.playSFX('knob-tick');
           this.lastToneTickVal = newTone;
+        }
+      } else if (knobName === 'source') {
+        // Source knob on Tivoli Model One (OFF, FM, AM, AUX)
+        const angle = this.draggedKnob.rotation.z - moveDelta * 0.6;
+        this.draggedKnob.rotation.z = Math.max(-0.8, Math.min(1.4, angle));
+
+        if (this.draggedKnob.rotation.z < -0.3) {
+          if (this.audioEngine.isPoweredOn) {
+            this.audioEngine.setPower(false);
+            this.radio.setPower(false);
+            this.audioEngine.playSFX('click');
+          }
+        } else {
+          if (!this.audioEngine.isPoweredOn) {
+            this.audioEngine.setPower(true);
+            this.radio.setPower(true);
+            this.audioEngine.playSFX('power-thump');
+          }
+          if (this.draggedKnob.rotation.z >= -0.3 && this.draggedKnob.rotation.z < 0.3) {
+            if (this.audioEngine.currentBand !== 'FM') {
+              this.audioEngine.setBand('FM');
+              this.radio.setActiveBand('FM');
+              this.audioEngine.playSFX('click');
+            }
+          } else if (this.draggedKnob.rotation.z >= 0.3 && this.draggedKnob.rotation.z < 0.9) {
+            if (this.audioEngine.currentBand !== 'AM') {
+              this.audioEngine.setBand('AM');
+              this.radio.setActiveBand('AM');
+              this.audioEngine.playSFX('click');
+            }
+          } else if (this.draggedKnob.rotation.z >= 0.9) {
+            if (this.audioEngine.currentBand !== 'AUX') {
+              this.audioEngine.setBand('AUX');
+              this.radio.setActiveBand('AUX');
+              this.audioEngine.playSFX('click');
+            }
+          }
         }
       }
 
@@ -270,11 +338,27 @@ export class InteractionManager {
 
     let text = '';
     if (target.userData.isKnob) {
-      if (target.userData.name === 'tuning') text = 'Tuning Dial — Click & drag or scroll to tune';
-      if (target.userData.name === 'volume') text = `Volume: ${Math.round(this.audioEngine.volume * 100)}% — Drag or scroll`;
-      if (target.userData.name === 'tone') text = `Klang / Tone — Drag or scroll`;
+      if (target.userData.isAntennaTuner) {
+        text = 'Flexible Antenna — Twist or drag to tune frequency';
+      } else if (target.userData.isGeared) {
+        text = '5:1 Planetary Geared Dial — Drag or scroll to tune';
+      } else if (target.userData.name === 'tuning') {
+        text = 'Tuning Dial — Click & drag or scroll to tune';
+      } else if (target.userData.name === 'volume') {
+        text = `Volume: ${Math.round(this.audioEngine.volume * 100)}% — Drag or scroll`;
+      } else if (target.userData.name === 'tone') {
+        text = `Klang / Tone — Drag or scroll`;
+      } else if (target.userData.name === 'source') {
+        text = 'Source Selector (OFF • FM • AM • AUX) — Drag to switch';
+      }
     } else if (target.userData.isButton) {
-      text = `Band: ${target.userData.value} — Click to switch`;
+      if (target.userData.type === 'volume-step') {
+        text = `Volume ${target.userData.dir > 0 ? 'Up (+)' : 'Down (-)'} — Click to adjust`;
+      } else if (target.userData.type === 'band-toggle') {
+        text = `Band Toggle (${this.audioEngine.currentBand === 'FM' ? 'Switch to AM' : 'Switch to FM'})`;
+      } else if (target.userData.type === 'band') {
+        text = `Band: ${target.userData.value} — Click to switch`;
+      }
     } else if (target.userData.isSwitch) {
       text = `Power: ${this.audioEngine.isPoweredOn ? 'ON' : 'OFF'} — Click to toggle`;
     } else if (target.userData.isAntenna) {

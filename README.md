@@ -1,84 +1,70 @@
-# BRAUN RT 20 — 3D Interactive Radio Receiver
+# ICONIC RADIOS — 3D Interactive Audio Player & Design Museum
 
-> *"Weniger, aber besser"* — Less, but better.  
-> An interactive, high-fidelity 3D web radio receiver built with **Three.js** and the **Web Audio API**, paying homage to **Dieter Rams** and the iconic 1961 Braun / Ulm School of Design philosophy.
+> An interactive, museum-grade 3D web radio collection built with **Three.js** and the **Web Audio API**, celebrating milestone industrial designs from German functionalism and 1990s French pop to 2000s American neo-analog hi-fi.
 
-![Braun RT 20 Radio Receiver](preview6.png)
-
----
-
-## 📻 Overview
-
-The **Braun RT 20 Tischsuper** (table radio), originally designed in 1961 by **Dieter Rams**, is one of the definitive benchmarks of 20th-century industrial design. Characterized by its unadorned architectural symmetry, blonde wood side cheeks, brushed aluminum faceplate, and intuitive rotary controls, it established a visual syntax that continues to influence consumer electronics today.
-
-This project recreates the RT 20 as a fully interactive, physically modelled 3D receiver in the browser. It combines real-time WebGL rendering, true angular rotary kinematics, realistic superheterodyne RF radio physics, and live 24/7 internet radio stations with zero external plugins.
+| 1961 • Braun RT 20 | 1997 • Lexon Tykho | 2000 • Tivoli Model One |
+| :---: | :---: | :---: |
+| ![Braun RT 20](preview_braun.png) | ![Lexon Tykho](preview_lexon.png) | ![Tivoli Model One](preview_tivoli.png) |
 
 ---
 
-## ✨ Features & Craftsmanship
+## 📻 The Iconic Radio Collection
 
-### 1. Authentic Industrial Design
-- **Three Historical Editions**:
-  - **RT 20 Wood & White (1961)**: Classic blonde Scandinavian ash wood side cheeks with subtle growth rings and warm matte white chassis.
-  - **Atelier White**: Pure matte off-white casing, anodized aluminum faceplate, and signature cadmium-orange tuning accents.
-  - **Atelier Anthracite**: Deep matte graphite casing with dark gunmetal panels and contrasting white typography.
-- **Physical Modeling & Real-Time Details**:
-  - **Perforated Speaker Grille**: Full-coverage micro-perforations with dark acoustic backing cloth and the vintage *BRAUN* typographic emblem.
-  - **Dynamic Speaker Cone**: Physically vibrating 3D paper cone and dust cap driven in real time by Web Audio sub-bass frequencies.
-  - **Illuminated Dial Window**: Frosted frequency scale with an authentic cadmium-orange pointer needle and incandescent dial lamp with **150ms thermal inertia simulation** (soft rise and decay).
-  - **Ballistic Galvanometer / VU Meter**: Functional analog signal meter needle with calibrated spring-damping reacting to RF signal strength and audio levels.
-  - **Knurled Aluminum Knobs**: Tactile fluted cylindrical dials with polished chamfered rims and hairline index notches.
-  - **Rear Cabinet Details**: Perforated heat dissipation louvers, chassis serial badge, external dipole antenna terminals, and vintage German DIN specification plate.
+Switch instantly between milestone radio designs directly in the browser or via keyboard (<kbd>X</kbd>):
 
----
+### 1. Braun RT 20 (1961) — Dieter Rams & The Ulm School
+* *"Weniger, aber besser"* — Less, but better.
+* **The Masterpiece of German Functionalism**:
+  * Architectural balance with warm matte white casing, brushed anodized aluminum faceplate, and blonde Scandinavian ash wood side cheeks.
+  * Backlit frosted dial window with hairline cadmium-orange pointer needle and **150ms incandescent thermal rise simulation**.
+  * Dynamic paper speaker cone vibrating to live bass frequencies.
+  * Ballistic galvanometer VU / signal strength meter with spring damping.
+  * Fluted cylindrical knurled dials and 4-stage telescopic chrome antenna.
+  * **Chassis Themes**: Atelier White, Atelier Anthracite, RT 20 Wood & White.
 
-### 2. Physical & Tactile 3D Kinematics
-- **True Angular Knob Dragging**: Rotary dials calculate angular displacement around the knob center (`Math.atan2()`), delivering a natural twisting motion rather than artificial linear dragging.
-- **Acoustic Feedback**:
-  - Transformer low-frequency power-on thump.
-  - Mechanical push-button latching clicks for waveband selectors (`FM`, `AM`, `SW`, `AUX`).
-  - Tactile detent tick sounds when rotating volume and tone knobs.
-- **Telescopic Chrome Antenna**: 4-stage extendable antenna. Retracting the antenna attenuates signal reception and introduces realistic atmospheric RF noise.
-- **Cinematic Camera Transitions**: Smooth interpolated focal transitions between **Hero (3/4)**, **Front**, **Dial Close-up**, **Knobs**, and **Rear Service Panel**.
-- **Studio Day & Twilight Night Modes**: In Night Mode, ambient room light dims into a warm evening atmosphere, highlighting the incandescent dial lamp casting an amber glow across the faceplate.
+### 2. Lexon Tykho (1997) — Marc Berthier
+* *Permanent Collections: MoMA (New York), Centre Pompidou (Paris)*
+* **The 1990s French Pop & Tactile Icon**:
+  * Injection-molded seamless splashproof silicone elastomer rubber with velvety PBR response.
+  * **Twist-the-Antenna Frequency Tuning**: Grab and twist the flexible rubber antenna directly in 3D to seek radio stations.
+  * Recessed backlit digital LCD frequency matrix window displaying frequency, band, and signal bars.
+  * Molded circular speaker dimples and embossed tactile membrane push-buttons (+ / - volume, power, and band).
+  * **Colorways**: Signature Duck Blue, Terracotta, Olive Green, 1990s Lemon, Slate Grey.
 
-| Twilight Night Mode | Dial Scale & Warm Illumination |
-| :---: | :---: |
-| ![Night Mode](preview_night.png) | ![Dial Window](preview_dial.png) |
-
----
-
-### 3. Whisper-Quiet, Distilled Interface
-Adhering to Dieter Rams's principle that *"Good design is unobtrusive"*, the interface avoids noisy on-screen HUDs:
-- **Whisper Ticker**: A quiet, minimalist status ticker at the bottom-center that indicates station name, frequency, genre, and streaming bitrate without distracting from the physical object.
-- **Collapsible Preset Drawer**: Quick access to all stations and live signal strength meters via the <kbd>S</kbd> key or drawer toggle.
-- **Dismissible Onboarding**: Non-intrusive hint explaining physical knob interaction, persisting state to `localStorage`.
-- **Keyboard Shortcuts Modal**: Accessible at any time via <kbd>?</kbd>.
-- **Screen Reader Accessibility**: Built-in `#aria-status` live region announcing band switches, tuning frequency, power state, and volume levels.
+### 3. Tivoli Audio Model One (2000) — Henry Kloss
+* *The Benchmark of 21st-Century Neo-Analog Hi-Fi*
+* **Warm Acoustic Wood & Planetary Geared Precision**:
+  * Handcrafted furniture-grade wooden cabinet with inset cream/taupe, cobalt blue, or silver faceplates.
+  * **5:1 Planetary Geared Tuning Dial**: Heavily geared reduction ratio with velvet rotational resistance for micro-fine tuning.
+  * **Dynamic Amber Carrier-Locking Tuning LED**: Translucent diode that glows softly in static and brightens brilliantly with amber bloom when locking onto a station carrier.
+  * Rear cylindrical bass-reflex acoustic port, 75Ω antenna F-connector, and metal acoustic grille.
+  * **Cabinet Finishes**: Classic Walnut / Cream, Cherry / Cobalt Blue, Black Ash / Silver, Piano White.
 
 ---
 
-### 4. RF Physics & Audio Engine
+## ✨ Audio Engine & RF Physics
+
 - **Direct 24/7 Live Internet Streams**:
-  - Streamed directly from **SomaFM** via unblocked Icecast connections (using `no-referrer` policy to prevent hotlink blocks).
+  - Live streams from **SomaFM** via unblocked Icecast connections (configured with `no-referrer` policy to bypass hotlink restrictions).
 - **Realistic Superheterodyne Tuning Mechanics**:
-  - Resonant bandpass-filtered pink and white atmospheric noise tracks the dial position.
+  - Resonant bandpass-filtered pink and white atmospheric RF noise tracks dial position.
   - Superheterodyne heterodyne whistle sweeps in pitch toward zero-beat as you align with a carrier frequency.
   - Automatic Gain Control (AGC): Atmospheric static naturally subsides as signal strength peaks.
 - **Resilient Procedural Synth Fallback**:
-  - If network streaming drops or times out (>4.5s), the radio seamlessly cross-fades into warm generative analog drone chords and harmonic sweeps, ensuring an uninterrupted listening experience.
+  - If network streaming drops or times out (>4.5s), the radio seamlessly transitions into warm generative analog drone chords and harmonic sweeps, ensuring an uninterrupted listening experience.
 - **AUX / Line-In Mode**:
   - Switch to the `AUX` band and drag & drop any `.mp3`, `.wav`, `.flac`, or `.ogg` file onto the radio to play personal audio through the vintage speaker simulation!
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## ⌨️ Universal Keyboard Shortcuts
 
-The radio can be operated entirely via keyboard:
+Operate the entire collection using the keyboard:
 
 | Key | Action | Description |
 | :--- | :--- | :--- |
-| <kbd>Space</kbd> | **Power** | Toggle receiver power on / off |
+| <kbd>Space</kbd> | **Power** | Toggle receiver power on / standby |
+| <kbd>X</kbd> | **Cycle Radio** | Switch between Braun RT 20, Lexon Tykho, and Tivoli Model One |
 | <kbd>←</kbd> / <kbd>→</kbd> | **Tune Down / Up** | Fine frequency adjustment (0.1 MHz / 5 kHz) |
 | <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | **Coarse Tune** | Fast frequency sweep (1.0 MHz / 50 kHz) |
 | <kbd>↑</kbd> / <kbd>↓</kbd> | **Volume Up / Down** | Adjust audio output level (5% increments) |
@@ -157,26 +143,26 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 npm run build
 npm run preview
 ```
-The compiled, tree-shaken static assets will be output to the `dist/` directory.
 
 ---
 
 ## 🔗 Deep-Link URL Parameters
 
-Configure the initial camera angle, lighting, theme, or power state directly through URL search parameters:
+Configure the initial model, camera angle, lighting, theme, or power state directly through URL search parameters:
 
 | Parameter | Values | Description |
 | :--- | :--- | :--- |
-| `theme` | `wood`, `white`, `black` | Chassis finish (RT 20 Wood, Atelier White, Atelier Anthracite) |
+| `model` | `braun`, `lexon`, `tivoli` | Active 3D radio design |
+| `theme` | Per-model themes | Chassis finish (`wood`, `duck-blue`, `walnut`, etc.) |
 | `view` | `hero`, `front`, `dial`, `controls`, `back` | Initial camera focal point |
-| `night` | `true`, `1` | Start in Twilight Night mode with dial lamp illuminated |
+| `night` | `true`, `1` | Start in Twilight Night mode |
 | `power` | `on`, `1` | Start with radio powered on |
 | `drawer` | `open`, `1` | Start with Stations Drawer opened |
 
 **Quick Links:**
-- [Night Close-Up of Dial](http://localhost:5173/?view=dial&power=on&night=true)
-- [RT 20 Wood Edition (Powered On)](http://localhost:5173/?theme=wood&power=on)
-- [Rear Specification & Louver View](http://localhost:5173/?view=back)
+- [Lexon Tykho (Duck Blue, Powered On)](http://localhost:5173/?model=lexon&power=on)
+- [Tivoli Model One (Walnut, Dial Close-up)](http://localhost:5173/?model=tivoli&view=dial&power=on)
+- [Braun RT 20 (Wood Edition, Twilight Night)](http://localhost:5173/?model=braun&theme=wood&night=true&power=on)
 
 ---
 
@@ -184,31 +170,36 @@ Configure the initial camera angle, lighting, theme, or power state directly thr
 
 ```
 braun-radio/
-├── index.html          # Semantic HTML shell, viewport meta, HUD ticker, and shortcuts modal
+├── index.html            # Semantic HTML shell, model switcher tabs, HUD ticker, shortcuts modal
 ├── src/
-│   ├── main.js         # Three.js scene setup, PBR studio lighting, render loop, event orchestration
-│   ├── radioModel.js   # 3D procedural construction of the RT 20 chassis, knobs, dial, cone & antenna
-│   ├── audioEngine.js  # Web Audio graph: Icecast streaming, RF filters, heterodyne whistle, synth fallback
-│   ├── interaction.js  # True angular knob dragging, raycasting, mousewheel tuning, detent clicks
-│   ├── textures.js     # Procedural canvas textures: dial scale, perforated grille, ash wood grain, DIN plate
-│   └── style.css       # Bauhaus/Ulm typography, quiet ticker, shortcuts modal, night mode styles
-├── dist/               # Production build output
-└── package.json        # Dependencies (Three.js, Vite)
+│   ├── main.js           # Multi-model scene orchestrator, studio lighting, URL parameters, render loop
+│   ├── models/
+│   │   ├── BaseRadio.js       # Abstract base class / interface contract for all radio models
+│   │   ├── BraunRT20.js       # 1961 Braun RT 20: vibrating cone, illuminated dial window, VU meter
+│   │   ├── LexonTykho.js      # 1997 Lexon Tykho: silicone PBR, twist-antenna tuner, backlit LCD
+│   │   ├── TivoliModelOne.js  # 2000 Tivoli Model One: 5:1 planetary dial, dynamic amber LED, wood cabinet
+│   │   └── index.js           # Radio model registry and factory definitions
+│   ├── audioEngine.js    # Web Audio graph: Icecast streaming, RF filters, heterodyne whistle, synth fallback
+│   ├── interaction.js    # Multi-model raycasting, true angular knob dragging, 5:1 planetary gear, tooltips
+│   ├── textures.js       # Procedural canvas textures: dial scales, perforated mesh, wood grains, LCD matrix
+│   └── style.css         # Minimalist typography, model tabs, quiet ticker, shortcuts modal, night mode
+├── dist/                 # Production build output
+└── package.json          # Dependencies (Three.js, Vite)
 ```
 
 ---
 
-## 📜 Design Principles (Dieter Rams)
+## 📜 Design Principles
 
 This project is guided by Dieter Rams’s **Ten Principles of Good Design**:
-1. **Good design is innovative** — Modern 3D WebGL and Web Audio API recreating mid-century analog physics.
-2. **Good design makes a product useful** — A functioning 24/7 chillout radio station receiver for work, focus, or relaxation.
-3. **Good design is aesthetic** — The timeless proportion and quiet beauty of the 1961 RT 20.
-4. **Good design makes a product understandable** — Intuitive physical knobs and dial scales that explain their own function.
+1. **Good design is innovative** — Modern 3D WebGL and Web Audio API recreating analog physics.
+2. **Good design makes a product useful** — A functioning 24/7 chillout radio receiver for work, focus, or relaxation.
+3. **Good design is aesthetic** — Faithful proportions, authentic materials, and subtle lighting.
+4. **Good design makes a product understandable** — Intuitive physical dials and affordances that explain their own function.
 5. **Good design is unobtrusive** — Whisper-quiet UI that gets out of the way; zero banner clutter or flashy popups.
-6. **Good design is honest** — Physical materials look like what they are: anodized aluminum, matte paint, Scandinavian ash, and illuminated frosted glass.
-7. **Good design is long-lasting** — A 60-year-old design that remains as captivating today in 3D as it was in 1961.
-8. **Good design is thorough down to the last detail** — Thermal lamp rise curves, acoustic detents, and realistic RF heterodyne sweeps.
+6. **Good design is honest** — Materials look like what they are: anodized aluminum, silicone rubber, walnut, and illuminated glass.
+7. **Good design is long-lasting** — Celebrating designs spanning 1961 to 2000 that remain timeless.
+8. **Good design is thorough down to the last detail** — Thermal lamp curves, 5:1 planetary gear ratios, and antenna twist physics.
 9. **Good design is environmentally friendly** — Lightweight, tree-shaken static web bundle with efficient GPU memory usage.
 10. **Good design is as little design as possible** — *"Weniger, aber besser"*.
 
@@ -216,7 +207,7 @@ This project is guided by Dieter Rams’s **Ten Principles of Good Design**:
 
 ## 🎧 Acknowledgments
 
-- **Dieter Rams** for inspiring generations of designers and creating the timeless Braun RT 20.
+- **Dieter Rams**, **Marc Berthier**, and **Henry Kloss** for defining the golden eras of audio industrial design.
 - **[SomaFM](https://somafm.com/)** for providing commercial-free, listener-supported internet radio since 2000. Please consider [supporting SomaFM](https://somafm.com/support/).
 - **Three.js** team and contributors for the WebGL 3D engine.
 

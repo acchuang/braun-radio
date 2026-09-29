@@ -115,6 +115,82 @@ body.night-mode .brand-subtitle {
   color: #9da1aa;
 }
 
+/* Iconic Model Selector Tabs */
+.model-selector-nav {
+  display: flex;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  padding: 3px;
+  gap: 3px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+body.night-mode .model-selector-nav {
+  background: rgba(28, 29, 33, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.model-tab {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.2px;
+}
+
+body.night-mode .model-tab {
+  color: #9da1aa;
+}
+
+.model-tab:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.night-mode .model-tab:hover {
+  color: #edebe6;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.model-tab.active {
+  background: var(--text-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.night-mode .model-tab.active {
+  background: #edebe6;
+  color: #121316;
+}
+
+.model-tab .model-year {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.75;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.model-tab.active .model-year {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+body.night-mode .model-tab.active .model-year {
+  background: rgba(0, 0, 0, 0.18);
+}
+
 .brand-status-pill {
   display: flex;
   gap: 8px;
@@ -715,4 +791,32 @@ body.night-mode .shortcut-row kbd {
   background: #2d2e33;
   border-color: #404248;
   color: #edebe6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 860px) {
+  .ui-overlay {
+    padding: 16px;
+  }
+  .brand-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .model-selector-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .bottom-dock {
+    max-width: 96vw;
+    overflow-x: auto;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .onboarding-hint {
+    bottom: 74px;
+    left: 16px;
+    font-size: 11px;
+  }
 }

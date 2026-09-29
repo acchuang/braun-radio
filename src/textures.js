@@ -674,3 +674,433 @@ export function createWoodTexture() {
   return texture;
 }
 
+// 9. Lexon Tykho Rubber Texture (Micro-stippled silicone elastomer)
+export function createTykhoRubberTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    // Subtle silicone micro-roughness
+    const noise = (Math.random() - 0.5) * 22;
+    data[i] = Math.min(255, Math.max(0, 128 + noise));
+    data[i + 1] = Math.min(255, Math.max(0, 128 + noise));
+    data[i + 2] = 255; // normal map z
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(4, 4);
+  return texture;
+}
+
+// 10. Lexon Tykho Front Details (Speaker perforation dimples & branding)
+export function createTykhoFrontTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'rgba(0,0,0,0)';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Left half: Circular array of molded speaker dimples in silicone
+  const centerX = 260;
+  const centerY = 256;
+  const rings = 8;
+  for (let r = 1; r <= rings; r++) {
+    const radius = r * 24;
+    const count = Math.floor(r * 6.2);
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+
+      // Dimpled shadow and highlight
+      ctx.beginPath();
+      ctx.arc(x, y + 1.2, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // lower specular highlight
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.38)'; // deep dimple hole
+      ctx.fill();
+    }
+  }
+
+  // Right half branding: "LEXON" in clean geometric sans
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.fillText('LEXON', 580, 420);
+
+  ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.fillText('TYKHO • DESIGN MARC BERTHIER', 580, 448);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// 11. Lexon Tykho Minimalist Backlit LCD Frequency Window
+export function createTykhoLcdTexture(freq = 89.5, band = 'FM', isPower = true) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // LCD panel background
+  if (isPower) {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#a4c9ad');
+    grad.addColorStop(1, '#8eb899');
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = '#424d45';
+  }
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Bezel inner shadow
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+
+  if (isPower) {
+    // LCD Segments
+    ctx.fillStyle = '#17261a';
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 88px "Courier New", Courier, monospace';
+    ctx.fillText(freq.toFixed(1), canvas.width - 60, 160);
+
+    ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(band, 50, 90);
+
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(band === 'FM' ? 'MHz' : 'kHz', 50, 130);
+
+    // Battery / signal icon
+    ctx.fillStyle = '#17261a';
+    ctx.fillRect(50, 170, 24, 12);
+    ctx.fillRect(78, 165, 8, 17);
+    ctx.fillRect(90, 160, 8, 22);
+    ctx.fillRect(102, 155, 8, 27);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// 12. Tivoli Audio Model One Circular 5:1 Planetary Tuning Dial Scale
+export function createTivoliDialTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Background: Warm ivory disc
+  ctx.fillStyle = '#faf8f3';
+  ctx.beginPath();
+  ctx.arc(cx, cy, cx - 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Subtle circular hairline borders
+  ctx.strokeStyle = '#323438';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, cx - 18, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, cx - 90, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, cx - 170, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const font = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif';
+
+  // --- Outer Arc: FM 88 to 108 MHz ---
+  // The scale sweeps from approx 200 deg around to 340 deg (or 260 deg arc)
+  const startAngle = 0.85 * Math.PI; // bottom left
+  const endAngle = 2.15 * Math.PI;   // bottom right
+  const totalArc = endAngle - startAngle;
+
+  const fmMin = 88;
+  const fmMax = 108;
+  for (let f = fmMin; f <= fmMax; f += 0.5) {
+    const t = (f - fmMin) / (fmMax - fmMin);
+    const angle = startAngle + t * totalArc;
+    const isMajor = Math.abs(f - Math.round(f)) < 0.01 && f % 2 === 0;
+    const isHalf = Math.abs(f - Math.round(f)) < 0.01;
+
+    const rOuter = cx - 20;
+    const rInner = isMajor ? cx - 65 : (isHalf ? cx - 50 : cx - 35);
+
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * rOuter, cy + Math.sin(angle) * rOuter);
+    ctx.lineTo(cx + Math.cos(angle) * rInner, cy + Math.sin(angle) * rInner);
+    ctx.strokeStyle = isMajor ? '#111214' : '#45484e';
+    ctx.lineWidth = isMajor ? 3.5 : (isHalf ? 2.2 : 1.4);
+    ctx.stroke();
+
+    if (isMajor) {
+      const textR = cx - 80;
+      const tx = cx + Math.cos(angle) * textR;
+      const ty = cy + Math.sin(angle) * textR;
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.fillStyle = '#111214';
+      ctx.font = `bold 28px ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.toString(), 0, 0);
+      ctx.restore();
+    }
+  }
+
+  // --- Inner Arc: AM 550 to 1600 kHz ---
+  const amMin = 550;
+  const amMax = 1600;
+  const amSteps = [550, 600, 700, 800, 1000, 1200, 1400, 1600];
+  amSteps.forEach(f => {
+    const t = (f - amMin) / (amMax - amMin);
+    const angle = startAngle + t * totalArc;
+    const rOuter = cx - 92;
+    const rInner = cx - 130;
+
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * rOuter, cy + Math.sin(angle) * rOuter);
+    ctx.lineTo(cx + Math.cos(angle) * rInner, cy + Math.sin(angle) * rInner);
+    ctx.strokeStyle = '#8a4b2a'; // classic amber/ochre AM color
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    const textR = cx - 146;
+    const tx = cx + Math.cos(angle) * textR;
+    const ty = cy + Math.sin(angle) * textR;
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.fillStyle = '#8a4b2a';
+    ctx.font = `bold 22px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f >= 1000 ? (f / 100).toFixed(0) : f.toString(), 0, 0);
+    ctx.restore();
+  });
+
+  // Center Knob Hub
+  const hubGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, cx - 170);
+  hubGrad.addColorStop(0, '#ffffff');
+  hubGrad.addColorStop(0.7, '#ece8df');
+  hubGrad.addColorStop(1, '#d8d2c4');
+  ctx.fillStyle = hubGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, cx - 172, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#c4bcb0';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Pointer indicator notch on center hub
+  ctx.fillStyle = '#1c1e22';
+  ctx.beginPath();
+  ctx.arc(cx, cy - (cx - 200), 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// 13. Tivoli Model One Faceplate Markings Texture
+export function createTivoliFaceplateTexture(theme = 'walnut') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Background tone based on theme
+  let bg = '#ebe5d8'; // Classic warm cream taupe for Walnut
+  let textColor = '#2a2c30';
+  let amberColor = '#c7681c';
+
+  if (theme === 'cherry') {
+    bg = '#324a6e'; // Iconic cobalt blue faceplate with cherry wood
+    textColor = '#f2f4f8';
+    amberColor = '#f59e0b';
+  } else if (theme === 'black-ash') {
+    bg = '#d6d9de'; // Silver anodized aluminum
+    textColor = '#18191c';
+    amberColor = '#d97706';
+  } else if (theme === 'white') {
+    bg = '#f5f7fa';
+    textColor = '#222326';
+    amberColor = '#ea580c';
+  }
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const font = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+
+  // Top Center Brand Title
+  ctx.textAlign = 'center';
+  ctx.fillStyle = textColor;
+  ctx.font = `bold 28px ${font}`;
+  ctx.fillText('Tivoli Audio', 720, 60);
+
+  ctx.font = `600 14px ${font}`;
+  ctx.fillStyle = theme === 'cherry' ? '#ccd5e2' : '#6b7079';
+  ctx.fillText('MODEL ONE • HENRY KLOSS', 720, 84);
+
+  // Dial top index needle / marker
+  ctx.fillStyle = '#c73826'; // Red/orange index line
+  ctx.fillRect(718, 102, 4, 18);
+
+  // Tuning LED label
+  ctx.font = `bold 12px ${font}`;
+  ctx.fillStyle = theme === 'cherry' ? '#fcd34d' : amberColor;
+  ctx.fillText('TUNING', 890, 180);
+
+  // Source Selector Knob labels
+  const sourceX = 830;
+  const sourceY = 380;
+  ctx.font = `600 14px ${font}`;
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.fillText('OFF', sourceX - 45, sourceY - 35);
+  ctx.fillText('FM', sourceX + 45, sourceY - 35);
+  ctx.fillText('AM', sourceX + 55, sourceY + 15);
+  ctx.fillText('AUX', sourceX - 50, sourceY + 15);
+
+  // Volume knob label
+  const volX = 610;
+  const volY = 380;
+  ctx.fillText('VOLUME', volX, volY + 55);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// 14. Tivoli Wood Grain Variations (Walnut, Cherry, Black Ash)
+export function createTivoliWoodTexture(type = 'walnut') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+
+  let baseStart = '#5a3821';
+  let baseMid = '#6c4328';
+  let baseEnd = '#4d2e1a';
+  let ringColor1 = 'rgba(40, 20, 10, 0.22)';
+  let ringColor2 = 'rgba(75, 42, 22, 0.12)';
+
+  if (type === 'cherry') {
+    baseStart = '#7e351d';
+    baseMid = '#943e22';
+    baseEnd = '#662814';
+    ringColor1 = 'rgba(60, 18, 8, 0.22)';
+    ringColor2 = 'rgba(110, 40, 20, 0.12)';
+  } else if (type === 'black-ash') {
+    baseStart = '#242528';
+    baseMid = '#2e3034';
+    baseEnd = '#1c1d1f';
+    ringColor1 = 'rgba(12, 12, 14, 0.45)';
+    ringColor2 = 'rgba(45, 46, 50, 0.25)';
+  }
+
+  const baseGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  baseGrad.addColorStop(0, baseStart);
+  baseGrad.addColorStop(0.3, baseMid);
+  baseGrad.addColorStop(0.7, baseStart);
+  baseGrad.addColorStop(1, baseEnd);
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Wood Grain growth waves
+  for (let i = 0; i < 110; i++) {
+    const yCenter = (i / 110) * canvas.height;
+    ctx.beginPath();
+    ctx.strokeStyle = i % 2 === 0 ? ringColor1 : ringColor2;
+    ctx.lineWidth = 1.6 + Math.sin(i * 0.5) * 1.2;
+
+    ctx.moveTo(0, yCenter);
+    for (let x = 0; x <= canvas.width; x += 24) {
+      const wave = Math.sin(x * 0.006 + i * 0.35) * 12 + Math.sin(x * 0.02) * 3;
+      ctx.lineTo(x, yCenter + wave);
+    }
+    ctx.stroke();
+  }
+
+  // Microscopic wood pores
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const idx = (y * canvas.width + x) * 4;
+      const noise = (Math.random() - 0.5) * 14;
+      data[idx] = Math.min(255, Math.max(0, data[idx] + noise));
+      data[idx + 1] = Math.min(255, Math.max(0, data[idx + 1] + noise * 0.85));
+      data[idx + 2] = Math.min(255, Math.max(0, data[idx + 2] + noise * 0.7));
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+// 15. Tivoli Speaker Grille Texture (Fine acoustic metal mesh)
+export function createTivoliSpeakerTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#222428';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Micro-perforated mesh
+  const holeRadius = 2.2;
+  const spacing = 7.5;
+  for (let y = 0; y < canvas.height; y += spacing) {
+    const isOdd = Math.floor(y / spacing) % 2 === 1;
+    const xOffset = isOdd ? spacing / 2 : 0;
+    for (let x = xOffset; x < canvas.width; x += spacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, holeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#0a0b0d';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x + 0.6, y + 0.6, holeRadius * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+

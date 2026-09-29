@@ -22,9 +22,23 @@
     <!-- Top Brand Header (Clean Ulm School typography) -->
     <header class="brand-header">
       <div class="brand-logo-block">
-        <h1 class="brand-logo">BRAUN</h1>
-        <span class="brand-subtitle">RT 20 • 1961 HI-FI RECEIVER</span>
+        <h1 id="brand-logo" class="brand-logo">BRAUN</h1>
+        <span id="brand-subtitle" class="brand-subtitle">RT 20 • 1961 HI-FI RECEIVER</span>
       </div>
+
+      <!-- Iconic Radio Model Switcher (Pill Tabs) -->
+      <nav id="model-selector-nav" class="model-selector-nav" role="tablist" aria-label="Iconic Radio Models">
+        <button class="model-tab active" data-model="braun" role="tab" aria-selected="true" title="Braun RT 20 (1961) — Dieter Rams">
+          <span class="model-year">1961</span> Braun RT 20
+        </button>
+        <button class="model-tab" data-model="lexon" role="tab" aria-selected="false" title="Lexon Tykho (1997) — Marc Berthier">
+          <span class="model-year">1997</span> Lexon Tykho
+        </button>
+        <button class="model-tab" data-model="tivoli" role="tab" aria-selected="false" title="Tivoli Model One (2000) — Henry Kloss">
+          <span class="model-year">2000</span> Tivoli Model One
+        </button>
+      </nav>
+
       <div class="brand-status-pill">
         <span id="power-indicator-pill" class="status-indicator standby">STANDBY</span>
         <span id="band-indicator-pill" class="status-indicator band">FM</span>
@@ -55,7 +69,7 @@
     <!-- Bottom Floating Dock -->
     <nav class="bottom-dock" aria-label="Controls and Views">
       <!-- Theme Selection -->
-      <div class="dock-group" role="group" aria-label="Chassis Theme">
+      <div id="theme-selector-group" class="dock-group" role="group" aria-label="Chassis Theme">
         <button class="dock-btn active" data-theme="white" title="Classic Atelier White" aria-pressed="true">
           <span class="dock-color-circle white" aria-hidden="true"></span> White
         </button>
@@ -134,6 +148,7 @@
         <div class="shortcut-row"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <span>Wavebands (FM, AM, SW, AUX)</span></div>
         <div class="shortcut-row"><kbd>M</kbd> <span>Mute / Unmute Audio</span></div>
         <div class="shortcut-row"><kbd>V</kbd> <span>Cycle Camera Presets</span></div>
+        <div class="shortcut-row"><kbd>X</kbd> <span>Cycle Iconic Radio Designs</span></div>
         <div class="shortcut-row"><kbd>N</kbd> <span>Toggle Night / Day Lighting</span></div>
         <div class="shortcut-row"><kbd>S</kbd> <span>Toggle Station Guide</span></div>
         <div class="shortcut-row"><kbd>?</kbd> <span>Toggle Shortcuts Help</span></div>
