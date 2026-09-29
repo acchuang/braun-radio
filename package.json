@@ -1,7 +1,8 @@
 {
   "name": "braun-radio",
   "version": "1.0.0",
-  "description": "",
+  "description": "Interactive 3D Braun RT 20 radio receiver built with Three.js and Web Audio API",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
