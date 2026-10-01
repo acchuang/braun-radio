@@ -164,20 +164,34 @@ export class InteractionManager {
       const deltaY = this.lastMousePos.y - e.clientY; // up is positive
       this.lastMousePos = { x: e.clientX, y: e.clientY };
 
-      // Directional move delta: circular arc rotation blended with intuitive upward/tangential drag
-      const linearDelta = (deltaX + deltaY) * 0.012;
-      const moveDelta = (Math.abs(angleDelta) > 0.005 ? angleDelta * 1.8 : 0) + linearDelta;
+      // Directional move delta: pure angular rotation, or clean tangential projection
+      let moveDelta = 0;
+      if (Math.abs(angleDelta) > 0.003) {
+        moveDelta = angleDelta;
+      } else {
+        // Tangential motion projection: prevents directional fighting across quadrants
+        const rx = this.lastMousePos.x - this.knobScreenCenter.x;
+        const ry = this.lastMousePos.y - this.knobScreenCenter.y;
+        const rLen = Math.hypot(rx, ry);
+        if (rLen > 12) {
+          // Tangent vector clockwise: (-ry, rx)
+          moveDelta = (-ry * deltaX + rx * deltaY) / (rLen * rLen);
+        } else {
+          moveDelta = (deltaX - deltaY) * 0.006;
+        }
+      }
+
       const knobName = this.draggedKnob.userData.name;
 
       if (knobName === 'tuning') {
-        // Tuning knob moves frequency
+        // Tuning knob moves frequency with precise gear reduction
         const isGeared = this.draggedKnob.userData.isGeared;
-        const gearRatio = isGeared ? 0.35 : 1.0;
-        const step = moveDelta * 0.08 * gearRatio;
-        this.draggedKnob.rotation.z -= moveDelta * 0.8 * gearRatio;
+        const gearRatio = isGeared ? 0.35 : 0.75;
+        const step = moveDelta * gearRatio;
+        this.draggedKnob.rotation.z -= step * 1.5;
 
         // Trigger mechanical ratchet ticks
-        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > (isGeared ? 0.08 : 0.15)) {
+        if (Math.abs(this.draggedKnob.rotation.z - this.lastTuningTickAngle) > (isGeared ? 0.06 : 0.12)) {
           this.audioEngine.playSFX('knob-tick');
           this.lastTuningTickAngle = this.draggedKnob.rotation.z;
         }
@@ -186,21 +200,43 @@ export class InteractionManager {
         const band = this.audioEngine.currentBand;
 
         if (band === 'FM') {
-          newFreq = Math.max(88.0, Math.min(108.0, newFreq + step * 20));
+          newFreq = Math.max(88.0, Math.min(108.0, newFreq + step * 4.5));
         } else if (band === 'AM') {
-          newFreq = Math.max(530, Math.min(1600, newFreq + step * 1070));
+          newFreq = Math.max(530, Math.min(1600, newFreq + step * 240));
         } else if (band === 'SW') {
-          newFreq = Math.max(6.0, Math.min(18.0, newFreq + step * 12.0));
+          newFreq = Math.max(6.0, Math.min(18.0, newFreq + step * 3.0));
+        }
+
+        // Magnetic AFC Detent: soft pull towards station carrier frequencies
+        const bandStations = this.audioEngine.stations[band] || [];
+        const snapThreshold = band === 'FM' ? 0.18 : (band === 'AM' ? 14 : 0.12);
+        let nearLock = false;
+        for (const st of bandStations) {
+          const dist = Math.abs(newFreq - st.freq);
+          if (dist < snapThreshold) {
+            newFreq = THREE.MathUtils.lerp(newFreq, st.freq, 0.42);
+            nearLock = true;
+            if (dist < 0.05 && !this.isNearLock) {
+              this.isNearLock = true;
+              this.audioEngine.playSFX('knob-tick');
+            }
+            break;
+          }
+        }
+        if (!nearLock) {
+          this.isNearLock = false;
         }
 
         this.audioEngine.setFrequency(newFreq);
         this.radio.setFrequency(newFreq, band);
+        this.updateTooltip(this.draggedKnob);
       } else if (knobName === 'volume') {
         // Volume knob
         const deltaVol = moveDelta * 0.12;
         const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + deltaVol));
         this.audioEngine.setVolume(newVol);
         this.radio.setVolumeAngle(newVol);
+        this.updateTooltip(this.draggedKnob);
 
         // Tactile detent tick on volume increments
         if (Math.abs(newVol - this.lastVolumeTickVal) > 0.08) {
@@ -213,6 +249,7 @@ export class InteractionManager {
         const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + deltaTone));
         this.audioEngine.setTone(newTone);
         this.radio.setToneAngle(newTone);
+        this.updateTooltip(this.draggedKnob);
 
         // Tactile detent tick on tone increments
         if (Math.abs(newTone - this.lastToneTickVal) > 0.08) {
@@ -223,6 +260,7 @@ export class InteractionManager {
         // Source knob on Tivoli Model One (OFF, FM, AM, AUX)
         const angle = this.draggedKnob.rotation.z - moveDelta * 0.6;
         this.draggedKnob.rotation.z = Math.max(-0.8, Math.min(1.4, angle));
+        this.updateTooltip(this.draggedKnob);
 
         if (this.draggedKnob.rotation.z < -0.3) {
           if (this.audioEngine.isPoweredOn) {
@@ -290,38 +328,44 @@ export class InteractionManager {
     }
   }
 
-  // Mouse wheel fine-tuning when hovering over knobs
+  // Mouse wheel fine-tuning when hovering over or actively dragging knobs
   onWheel(e) {
-    if (!this.hoveredObject || !this.hoveredObject.userData.isKnob) return;
+    const targetKnob = this.draggedKnob || (this.hoveredObject && this.hoveredObject.userData.isKnob ? this.hoveredObject : null);
+    if (!targetKnob) return;
 
     e.preventDefault();
-    const knobName = this.hoveredObject.userData.name;
-    const delta = -Math.sign(e.deltaY) * 0.02;
+    e.stopPropagation();
+    const knobName = targetKnob.userData.name;
+    const isGeared = targetKnob.userData.isGeared;
+    const delta = -Math.sign(e.deltaY) * (isGeared ? 0.01 : 0.02);
 
     if (knobName === 'tuning') {
       const band = this.audioEngine.currentBand;
       let newFreq = this.audioEngine.frequency;
       if (band === 'FM') {
-        newFreq = Math.max(88.0, Math.min(108.0, newFreq + delta * 2.0));
+        newFreq = Math.max(88.0, Math.min(108.0, newFreq + delta * 1.2));
       } else if (band === 'AM') {
-        newFreq = Math.max(530, Math.min(1600, newFreq + delta * 40.0));
+        newFreq = Math.max(530, Math.min(1600, newFreq + delta * 25.0));
       } else if (band === 'SW') {
-        newFreq = Math.max(6.0, Math.min(18.0, newFreq + delta * 0.5));
+        newFreq = Math.max(6.0, Math.min(18.0, newFreq + delta * 0.35));
       }
       this.audioEngine.setFrequency(newFreq);
       this.radio.setFrequency(newFreq, band);
-      this.hoveredObject.rotation.z += delta * 2.0;
+      targetKnob.rotation.z += delta * 1.5;
       this.audioEngine.playSFX('knob-tick');
+      this.updateTooltip(targetKnob);
     } else if (knobName === 'volume') {
-      const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + delta));
+      const newVol = Math.max(0, Math.min(1, this.audioEngine.volume + delta * 2.0));
       this.audioEngine.setVolume(newVol);
       this.radio.setVolumeAngle(newVol);
       this.audioEngine.playSFX('knob-tick');
+      this.updateTooltip(targetKnob);
     } else if (knobName === 'tone') {
-      const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + delta));
+      const newTone = Math.max(0, Math.min(1, this.audioEngine.tone + delta * 2.0));
       this.audioEngine.setTone(newTone);
       this.radio.setToneAngle(newTone);
       this.audioEngine.playSFX('knob-tick');
+      this.updateTooltip(targetKnob);
     }
 
     if (this.onStateChange) this.onStateChange();
@@ -338,18 +382,19 @@ export class InteractionManager {
 
     let text = '';
     if (target.userData.isKnob) {
+      const freqStr = this.audioEngine.formatFreq ? this.audioEngine.formatFreq(this.audioEngine.frequency, this.audioEngine.currentBand) : `${this.audioEngine.frequency.toFixed(1)} MHz`;
       if (target.userData.isAntennaTuner) {
-        text = 'Flexible Antenna — Twist or drag to tune frequency';
+        text = `Antenna Tuner: ${freqStr} — Twist or scroll to tune`;
       } else if (target.userData.isGeared) {
-        text = '5:1 Planetary Geared Dial — Drag or scroll to tune';
+        text = `5:1 Planetary Geared Dial: ${freqStr} — Drag or scroll to tune`;
       } else if (target.userData.name === 'tuning') {
-        text = 'Tuning Dial — Click & drag or scroll to tune';
+        text = `Tuning Dial: ${freqStr} — Click & drag or scroll`;
       } else if (target.userData.name === 'volume') {
         text = `Volume: ${Math.round(this.audioEngine.volume * 100)}% — Drag or scroll`;
       } else if (target.userData.name === 'tone') {
-        text = `Klang / Tone — Drag or scroll`;
+        text = `Klang / Tone: ${Math.round(this.audioEngine.tone * 100)}% — Drag or scroll`;
       } else if (target.userData.name === 'source') {
-        text = 'Source Selector (OFF • FM • AM • AUX) — Drag to switch';
+        text = `Source Selector (${this.audioEngine.isPoweredOn ? this.audioEngine.currentBand : 'OFF'}) — Drag to switch`;
       }
     } else if (target.userData.isButton) {
       if (target.userData.type === 'volume-step') {

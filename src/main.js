@@ -91,7 +91,12 @@ class App {
     );
 
     // Hook audio engine status changes
-    this.audioEngine.onStatusChange = () => this.updateUI();
+    this.audioEngine.onStatusChange = () => {
+      this.updateUI();
+      if (this.audioEngine.isFallbackActive && this.audioEngine.isPoweredOn) {
+        this.showToast('Live stream buffering; warm analog procedural synth active.');
+      }
+    };
 
     // UI & Events
     this.bindUI();
@@ -363,8 +368,33 @@ class App {
     this.targetControlsTarget = preset.target.clone();
   }
 
+  // Minimal Toast Notification
+  showToast(msg, duration = 3000) {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast-notification';
+      toast.className = 'toast-notification';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, duration);
+  }
+
   // Waveband switch helper
   setBand(band) {
+    if (this.currentModelId === 'lexon' && (band === 'SW' || band === 'AUX')) {
+      this.showToast(`Lexon Tykho physically only features FM & AM wavebands.`);
+      return;
+    }
+    if (this.currentModelId === 'tivoli' && band === 'SW') {
+      this.showToast(`Tivoli Model One features FM, AM & AUX (no Shortwave).`);
+      return;
+    }
     this.audioEngine.setBand(band);
     this.radio.setActiveBand(band);
     this.radio.setFrequency(this.audioEngine.frequency, band);
@@ -649,6 +679,33 @@ class App {
     const uploadBtn = document.getElementById('upload-audio-btn');
     const auxUploadBox = document.getElementById('aux-upload-box');
 
+    // Interactive Header Status Pills
+    const powerPill = document.getElementById('power-indicator-pill');
+    if (powerPill) {
+      powerPill.style.cursor = 'pointer';
+      powerPill.title = 'Click to toggle power (or press Space)';
+      powerPill.addEventListener('click', () => {
+        const nextState = !this.audioEngine.isPoweredOn;
+        this.audioEngine.setPower(nextState);
+        this.radio.setPower(nextState);
+        this.updateUI();
+        this.dismissHint();
+        this.announceARIA(nextState ? 'Radio powered on' : 'Radio standby');
+      });
+    }
+
+    const bandPill = document.getElementById('band-indicator-pill');
+    if (bandPill) {
+      bandPill.style.cursor = 'pointer';
+      bandPill.title = 'Click to cycle wavebands (or press 1-4)';
+      bandPill.addEventListener('click', () => {
+        const bands = this.currentModelId === 'lexon' ? ['FM', 'AM'] : (this.currentModelId === 'tivoli' ? ['FM', 'AM', 'AUX'] : ['FM', 'AM', 'SW', 'AUX']);
+        const currentIdx = bands.indexOf(this.audioEngine.currentBand);
+        const nextBand = bands[(currentIdx + 1) % bands.length];
+        this.setBand(nextBand);
+      });
+    }
+
     if (uploadBtn && fileInput) {
       uploadBtn.addEventListener('click', () => fileInput.click());
     }
@@ -658,10 +715,16 @@ class App {
     if (fileInput) {
       fileInput.addEventListener('change', e => {
         if (e.target.files && e.target.files[0]) {
-          this.audioEngine.loadUserAudioFile(e.target.files[0]);
+          const file = e.target.files[0];
+          if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|ogg|flac|m4a|aac)$/i)) {
+            this.showToast('Please select a valid audio file (.mp3, .wav, .flac, .ogg)');
+            return;
+          }
+          this.audioEngine.loadUserAudioFile(file);
           this.radio.setActiveBand('AUX');
           this.updateUI();
           this.toggleDrawer(false);
+          this.showToast(`AUX Playing: ${file.name}`);
           this.announceARIA('Playing personal audio via AUX');
         }
       });
@@ -672,9 +735,15 @@ class App {
     window.addEventListener('drop', e => {
       e.preventDefault();
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        this.audioEngine.loadUserAudioFile(e.dataTransfer.files[0]);
+        const file = e.dataTransfer.files[0];
+        if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|ogg|flac|m4a|aac)$/i)) {
+          this.showToast('Please drop a valid audio file (.mp3, .wav, .flac, .ogg)');
+          return;
+        }
+        this.audioEngine.loadUserAudioFile(file);
         this.radio.setActiveBand('AUX');
         this.updateUI();
+        this.showToast(`AUX Playing: ${file.name}`);
         this.announceARIA('Playing dropped audio file via AUX');
       }
     });
@@ -817,7 +886,14 @@ class App {
   }
 }
 
-// Start application when DOM is ready
-window.addEventListener('DOMContentLoaded', () => {
+// Start application when DOM and typography are ready
+window.addEventListener('DOMContentLoaded', async () => {
+  if (document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('Font loading check:', e);
+    }
+  }
   window.braunApp = new App();
 });

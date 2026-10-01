@@ -402,6 +402,19 @@ export class TivoliModelOne extends BaseRadio {
     }
   }
 
+  setPower(on) {
+    this.isPowered = on;
+    if (this.sourceKnobMesh) {
+      if (!on) {
+        this.sourceKnobMesh.rotation.z = -0.6; // Point to OFF detent
+      } else {
+        if (this.currentBand === 'FM') this.sourceKnobMesh.rotation.z = 0;
+        else if (this.currentBand === 'AM') this.sourceKnobMesh.rotation.z = 0.6;
+        else if (this.currentBand === 'AUX') this.sourceKnobMesh.rotation.z = 1.2;
+      }
+    }
+  }
+
   setActiveBand(band) {
     this.currentBand = band;
     if (this.sourceKnobMesh && this.isPowered) {

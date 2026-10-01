@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+export const FONT_SANS = '"Instrument Sans", "Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif';
+export const FONT_MONO = '"IBM Plex Mono", "SF Mono", Menlo, monospace';
+
 /**
  * Procedural texture generators for the Braun Radio
  * Recreating Dieter Rams / Ulm School precision graphics & PBR textures
@@ -26,7 +29,7 @@ export function createDialTexture() {
   ctx.lineWidth = 4;
   ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
 
-  const baseFont = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif';
+  const baseFont = FONT_SANS;
 
   // Branding top row
   ctx.fillStyle = '#111214';
@@ -258,7 +261,7 @@ export function createSpeakerGrilleTexture() {
   }
 
   // Braun Logo in top-left
-  const baseFont = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+  const baseFont = FONT_SANS;
   ctx.fillStyle = '#151618';
   ctx.font = `bold 64px ${baseFont}`;
   ctx.textAlign = 'left';
@@ -338,7 +341,7 @@ export function createVUMeterTexture() {
   ctx.arc(256, 256, 244, 0, Math.PI * 2);
   ctx.stroke();
 
-  const baseFont = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+  const baseFont = FONT_SANS;
 
   // Title
   ctx.fillStyle = '#111214';
@@ -426,7 +429,7 @@ export function createControlPanelTexture() {
     ctx.fillRect(0, y, canvas.width, 1 + Math.random() * 2);
   }
 
-  const baseFont = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+  const baseFont = FONT_SANS;
 
   // Band push-button labels along top row
   const bands = ['FM (UKW)', 'AM (MW)', 'SW (KW)', 'AUX'];
@@ -566,7 +569,7 @@ export function createBackplateTexture() {
   ctx.fillStyle = '#1c1d20';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const baseFont = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+  const baseFont = FONT_SANS;
 
   // Perforated heat ventilation slots
   ctx.fillStyle = '#0f1012';
@@ -613,7 +616,7 @@ export function createBackplateTexture() {
   ctx.fillStyle = '#111111';
   ctx.fillText('MADE IN GERMANY', 1024, 765);
 
-  ctx.font = `20px monospace`;
+  ctx.font = `20px ${FONT_MONO}`;
   ctx.fillStyle = '#555555';
   ctx.fillText('SERIAL NO. BR-1961-094182', 1024, 825);
 
@@ -740,11 +743,11 @@ export function createTykhoFrontTexture() {
 
   // Right half branding: "LEXON" in clean geometric sans
   ctx.textAlign = 'left';
-  ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+  ctx.font = `bold 28px ${FONT_SANS}`;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.fillText('LEXON', 580, 420);
 
-  ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+  ctx.font = `600 16px ${FONT_SANS}`;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.fillText('TYKHO • DESIGN MARC BERTHIER', 580, 448);
 
@@ -779,14 +782,14 @@ export function createTykhoLcdTexture(freq = 89.5, band = 'FM', isPower = true) 
     // LCD Segments
     ctx.fillStyle = '#17261a';
     ctx.textAlign = 'right';
-    ctx.font = 'bold 88px "Courier New", Courier, monospace';
+    ctx.font = `bold 88px ${FONT_MONO}`;
     ctx.fillText(freq.toFixed(1), canvas.width - 60, 160);
 
-    ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.font = `bold 36px ${FONT_SANS}`;
     ctx.textAlign = 'left';
     ctx.fillText(band, 50, 90);
 
-    ctx.font = '22px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.font = `22px ${FONT_SANS}`;
     ctx.fillText(band === 'FM' ? 'MHz' : 'kHz', 50, 130);
 
     // Battery / signal icon
@@ -832,7 +835,7 @@ export function createTivoliDialTexture() {
   ctx.arc(cx, cy, cx - 170, 0, Math.PI * 2);
   ctx.stroke();
 
-  const font = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  const font = FONT_SANS;
 
   // --- Outer Arc: FM 88 to 108 MHz ---
   // The scale sweeps from approx 200 deg around to 340 deg (or 260 deg arc)
@@ -958,7 +961,7 @@ export function createTivoliFaceplateTexture(theme = 'walnut') {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const font = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
+  const font = FONT_SANS;
 
   // Top Center Brand Title
   ctx.textAlign = 'center';

@@ -1,0 +1,25 @@
+{
+  "detector": {
+    "ignoreRules": [
+      "clipped-overflow-container"
+    ],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "instrument sans",
+        "createdAt": "2026-10-01T04:37:47.857Z",
+        "reason": "Authentic neo-grotesque for Dieter Rams Ulm School typography"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-10-01T04:38:00.732Z",
+        "reason": "Authentic Dieter Rams 1961 Lichtgrau lacquer"
+      }
+    ]
+  }
+}
