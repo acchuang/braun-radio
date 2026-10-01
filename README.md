@@ -2,6 +2,8 @@
 
 > An interactive, museum-grade 3D web radio collection built with **Three.js** and the **Web Audio API**, celebrating milestone industrial designs from German functionalism and 1990s French pop to 2000s American neo-analog hi-fi.
 
+**Live Site**: [https://braun-radio.pages.dev](https://braun-radio.pages.dev)
+
 | 1961 • Braun RT 20 | 1997 • Lexon Tykho | 2000 • Tivoli Model One |
 | :---: | :---: | :---: |
 | ![Braun RT 20](preview_braun.png) | ![Lexon Tykho](preview_lexon.png) | ![Tivoli Model One](preview_tivoli.png) |
@@ -160,9 +162,10 @@ Configure the initial model, camera angle, lighting, theme, or power state direc
 | `drawer` | `open`, `1` | Start with Stations Drawer opened |
 
 **Quick Links:**
-- [Lexon Tykho (Duck Blue, Powered On)](http://localhost:5173/?model=lexon&power=on)
-- [Tivoli Model One (Walnut, Dial Close-up)](http://localhost:5173/?model=tivoli&view=dial&power=on)
-- [Braun RT 20 (Wood Edition, Twilight Night)](http://localhost:5173/?model=braun&theme=wood&night=true&power=on)
+- [Live Radio Collection](https://braun-radio.pages.dev)
+- [Lexon Tykho (Duck Blue, Powered On)](https://braun-radio.pages.dev/?model=lexon&power=on)
+- [Tivoli Model One (Walnut, Dial Close-up)](https://braun-radio.pages.dev/?model=tivoli&view=dial&power=on)
+- [Braun RT 20 (Wood Edition, Twilight Night)](https://braun-radio.pages.dev/?model=braun&theme=wood&night=true&power=on)
 
 ---
 
