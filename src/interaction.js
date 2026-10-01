@@ -61,6 +61,10 @@ export class InteractionManager {
   }
 
   onPointerDown(e) {
+    if (this.audioEngine && this.audioEngine.resumeContext) {
+      this.audioEngine.resumeContext();
+    }
+
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;

@@ -53,132 +53,46 @@ export class AudioEngine {
     this.masterGain = null;
     this.analyser = null;
 
+    // Helper to construct station with fast mirrors
+    const makeStation = (freq, name, genre, slug, bandwidth) => ({
+      freq,
+      name,
+      genre,
+      slug,
+      url: `https://ice2.somafm.com/${slug}-128-mp3`,
+      mirrors: [
+        `https://ice4.somafm.com/${slug}-128-mp3`,
+        `https://ice6.somafm.com/${slug}-128-mp3`,
+        `https://ice5.somafm.com/${slug}-128-mp3`
+      ],
+      mirrorIdx: 0,
+      bandwidth
+    });
+
     // Verified Real Stations (Heavy Chill / Ambient / Downtempo / Lo-Fi lineup)
     this.stations = {
       FM: [
-        {
-          freq: 89.5,
-          name: 'Groove Salad (Chill & Downtempo)',
-          genre: 'Ambient / Downtempo Beats & Grooves',
-          url: 'https://ice1.somafm.com/groovesalad-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 91.5,
-          name: 'Lush (Mellow Vocal Chillout)',
-          genre: 'Sensuous & Mellow Vocal Chillout',
-          url: 'https://ice1.somafm.com/lush-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 93.5,
-          name: 'Fluid (Chill Hop & Future Soul)',
-          genre: 'Soulful Chill Hip-Hop & Future Soul',
-          url: 'https://ice1.somafm.com/fluid-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 95.7,
-          name: 'Ill Street Lounge (Bachelor Pad Exotica)',
-          genre: 'Classic Mid-Century Lounge & Exotica',
-          url: 'https://ice1.somafm.com/illstreet-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 98.3,
-          name: 'Drone Zone (Atmospheric Ambient)',
-          genre: 'Atmospheric Ambient Space Chill',
-          url: 'https://ice1.somafm.com/dronezone-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 100.8,
-          name: 'Suburbs of Goa (Asian World Chill)',
-          genre: 'Desi-Influenced World Chill & Ambient Beats',
-          url: 'https://ice1.somafm.com/suburbsofgoa-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 103.2,
-          name: 'Vaporwaves (Nostalgic Chillwave)',
-          genre: 'Dreamy Vaporwave, Chillwave & Synth',
-          url: 'https://ice1.somafm.com/vaporwaves-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 105.5,
-          name: 'Deep Space One (Deep Ambient Chill)',
-          genre: 'Deep Space Ambient Electronic',
-          url: 'https://ice1.somafm.com/deepspaceone-128-mp3',
-          bandwidth: 0.45
-        },
-        {
-          freq: 107.5,
-          name: 'Beat Blender (Late-Night Chill House)',
-          genre: 'Deep House & Late Night Chill Grooves',
-          url: 'https://ice1.somafm.com/beatblender-128-mp3',
-          bandwidth: 0.45
-        }
+        makeStation(89.5, 'Groove Salad (Chill & Downtempo)', 'Ambient / Downtempo Beats & Grooves', 'groovesalad', 0.45),
+        makeStation(91.5, 'Lush (Mellow Vocal Chillout)', 'Sensuous & Mellow Vocal Chillout', 'lush', 0.45),
+        makeStation(93.5, 'Fluid (Chill Hop & Future Soul)', 'Soulful Chill Hip-Hop & Future Soul', 'fluid', 0.45),
+        makeStation(95.7, 'Ill Street Lounge (Bachelor Pad Exotica)', 'Classic Mid-Century Lounge & Exotica', 'illstreet', 0.45),
+        makeStation(98.3, 'Drone Zone (Atmospheric Ambient)', 'Atmospheric Ambient Space Chill', 'dronezone', 0.45),
+        makeStation(100.8, 'Suburbs of Goa (Asian World Chill)', 'Desi-Influenced World Chill & Ambient Beats', 'suburbsofgoa', 0.45),
+        makeStation(103.2, 'Vaporwaves (Nostalgic Chillwave)', 'Dreamy Vaporwave, Chillwave & Synth', 'vaporwaves', 0.45),
+        makeStation(105.5, 'Deep Space One (Deep Ambient Chill)', 'Deep Space Ambient Electronic', 'deepspaceone', 0.45),
+        makeStation(107.5, 'Beat Blender (Late-Night Chill House)', 'Deep House & Late Night Chill Grooves', 'beatblender', 0.45)
       ],
       AM: [
-        {
-          freq: 600,
-          name: 'Secret Agent (Spy Jazz & Lounge)',
-          genre: '1960s Spy Film Noir & Surf Jazz',
-          url: 'https://ice1.somafm.com/secretagent-128-mp3',
-          bandwidth: 30
-        },
-        {
-          freq: 820,
-          name: 'Boot Liquor (Americana & Roots)',
-          genre: 'Vintage Roots, Acoustic & Americana Chill',
-          url: 'https://ice1.somafm.com/bootliquor-128-mp3',
-          bandwidth: 30
-        },
-        {
-          freq: 1050,
-          name: 'Folk Forward (Acoustic Folk)',
-          genre: 'Contemporary & Indie Folk Acoustic',
-          url: 'https://ice1.somafm.com/folkfwd-128-mp3',
-          bandwidth: 30
-        },
-        {
-          freq: 1340,
-          name: 'Groove Salad Classic (Heritage Chill)',
-          genre: 'Early 2000s Classic Ambient Downtempo',
-          url: 'https://ice1.somafm.com/gsclassic-128-mp3',
-          bandwidth: 30
-        }
+        makeStation(600, 'Secret Agent (Spy Jazz & Lounge)', '1960s Spy Film Noir & Surf Jazz', 'secretagent', 30),
+        makeStation(820, 'Boot Liquor (Americana & Roots)', 'Vintage Roots, Acoustic & Americana Chill', 'bootliquor', 30),
+        makeStation(1050, 'Folk Forward (Acoustic Folk)', 'Contemporary & Indie Folk Acoustic', 'folkfwd', 30),
+        makeStation(1340, 'Groove Salad Classic (Heritage Chill)', 'Early 2000s Classic Ambient Downtempo', 'gsclassic', 30)
       ],
       SW: [
-        {
-          freq: 7.25,
-          name: 'Mission Control (NASA Comms & Ambient)',
-          genre: 'Space Ambient Mixed with Live NASA Comms',
-          url: 'https://ice1.somafm.com/missioncontrol-128-mp3',
-          bandwidth: 0.25
-        },
-        {
-          freq: 9.49,
-          name: 'SF 10-33 (Scanner Ambient)',
-          genre: 'Ambient Space with Live Scanner Radio',
-          url: 'https://ice1.somafm.com/sf1033-128-mp3',
-          bandwidth: 0.25
-        },
-        {
-          freq: 11.85,
-          name: 'DEF CON Radio (Cyber Electronic)',
-          genre: 'Dark Ambient & Hacker Electronic',
-          url: 'https://ice1.somafm.com/defcon-128-mp3',
-          bandwidth: 0.25
-        },
-        {
-          freq: 14.20,
-          name: 'Synphaera (Modern Synthesizer Space)',
-          genre: 'Modern Space Ambient Synthesizer',
-          url: 'https://ice1.somafm.com/synphaera-128-mp3',
-          bandwidth: 0.25
-        }
+        makeStation(7.25, 'Mission Control (NASA Comms & Ambient)', 'Space Ambient Mixed with Live NASA Comms', 'missioncontrol', 0.25),
+        makeStation(9.49, 'SF 10-33 (Scanner Ambient)', 'Ambient Space with Live Scanner Radio', 'sf1033', 0.25),
+        makeStation(11.85, 'DEF CON Radio (Cyber Electronic)', 'Dark Ambient & Hacker Electronic', 'defcon', 0.25),
+        makeStation(14.20, 'Synphaera (Modern Synthesizer Space)', 'Modern Space Ambient Synthesizer', 'synphaera', 0.25)
       ]
     };
   }
@@ -224,7 +138,18 @@ export class AudioEngine {
     });
 
     this.audioEl.addEventListener('error', (e) => {
-      console.warn('Icecast stream network error; engaging procedural fallback:', e);
+      console.warn('Icecast stream network error; checking mirrors or engaging fallback:', e);
+      if (this.activeStation && this.activeStation.mirrors && this.activeStation.mirrors.length > 0) {
+        if ((this.activeStation.mirrorIdx || 0) < this.activeStation.mirrors.length) {
+          const nextMirror = this.activeStation.mirrors[this.activeStation.mirrorIdx || 0];
+          this.activeStation.mirrorIdx = (this.activeStation.mirrorIdx || 0) + 1;
+          console.info(`Failing over station ${this.activeStation.name} to mirror: ${nextMirror}`);
+          this.audioEl.src = nextMirror;
+          this.audioEl.load();
+          this.audioEl.play().catch(() => {});
+          return;
+        }
+      }
       clearTimeout(this.streamWatchdog);
       this.streamError = true;
       this.isBuffering = false;
@@ -380,7 +305,7 @@ export class AudioEngine {
       const oscGain = this.ctx.createGain();
       osc.type = i % 2 === 0 ? 'sine' : 'triangle';
       osc.frequency.setValueAtTime(f, this.ctx.currentTime);
-      oscGain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+      oscGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
       osc.connect(oscGain);
       oscGain.connect(this.synthGain);
       osc.start();
@@ -391,7 +316,7 @@ export class AudioEngine {
     this.synthLFO = this.ctx.createOscillator();
     this.synthLFOGain = this.ctx.createGain();
     this.synthLFO.frequency.setValueAtTime(0.14, this.ctx.currentTime);
-    this.synthLFOGain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+    this.synthLFOGain.gain.setValueAtTime(0.04, this.ctx.currentTime);
     this.synthLFO.connect(this.synthLFOGain);
     this.synthLFOGain.connect(this.synthGain.gain);
     this.synthLFO.start();
@@ -402,7 +327,14 @@ export class AudioEngine {
     const now = this.ctx.currentTime;
     this.isFallbackActive = enabled;
     this.synthGain.gain.cancelScheduledValues(now);
-    this.synthGain.gain.setTargetAtTime(enabled ? 0.35 : 0, now, 0.4);
+    this.synthGain.gain.setTargetAtTime(enabled ? 0.45 : 0, now, 0.35);
+  }
+
+  // Ensure AudioContext is resumed upon any user interaction
+  resumeContext() {
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
   }
 
   // Play mechanical sound effects
@@ -454,9 +386,7 @@ export class AudioEngine {
     if (!this.isInitialized && on) {
       this.init();
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+    this.resumeContext();
 
     this.isPoweredOn = on;
     this.playSFX(on ? 'power-on' : 'click');
@@ -465,10 +395,10 @@ export class AudioEngine {
 
     const now = this.ctx.currentTime;
     if (on) {
-      // Fade in master volume
+      // Fade in master volume with logarithmic square curve
       this.masterGain.gain.cancelScheduledValues(now);
       this.masterGain.gain.setValueAtTime(0, now);
-      this.masterGain.gain.linearRampToValueAtTime(this.volume, now + 0.35);
+      this.masterGain.gain.linearRampToValueAtTime(Math.pow(this.volume, 2), now + 0.35);
 
       // Force tune to current frequency immediately
       this.updateTuning(true);
@@ -479,6 +409,7 @@ export class AudioEngine {
       if (this.audioEl) {
         this.audioEl.pause();
       }
+      this.enableFallbackSynth(false);
       this.isPlaying = false;
     }
   }
@@ -534,6 +465,7 @@ export class AudioEngine {
     if (band) this.currentBand = band;
     this.frequency = station.freq;
     this.applyBandFilters();
+    this.resumeContext();
     if (!this.isPoweredOn) {
       this.setPower(true);
     } else {
@@ -633,15 +565,28 @@ export class AudioEngine {
     clearTimeout(this.streamWatchdog);
     this.streamWatchdog = setTimeout(() => {
       if (this.isBuffering && this.isPoweredOn && this.currentSignalStrength > 0.2) {
-        console.warn('Icecast stream buffering timed out (>4.5s); activating warm procedural fallback.');
+        console.warn('Icecast stream buffering timed out (>3.8s); attempting mirror or fallback.');
+        if (this.activeStation && this.activeStation.mirrors && (this.activeStation.mirrorIdx || 0) < this.activeStation.mirrors.length) {
+          const nextMirror = this.activeStation.mirrors[this.activeStation.mirrorIdx || 0];
+          this.activeStation.mirrorIdx = (this.activeStation.mirrorIdx || 0) + 1;
+          console.info(`Watchdog failover for ${this.activeStation.name} to mirror: ${nextMirror}`);
+          this.audioEl.src = nextMirror;
+          this.audioEl.load();
+          this.audioEl.play().catch(() => {});
+          return;
+        }
         this.streamError = true;
         this.enableFallbackSynth(true);
         if (this.onStatusChange) this.onStatusChange();
       }
-    }, 4500);
+    }, 3800);
+
+    const streamUrl = (station.mirrorIdx && station.mirrors && station.mirrors[station.mirrorIdx - 1])
+      ? station.mirrors[station.mirrorIdx - 1]
+      : station.url;
 
     // Check if same URL is already playing
-    if (this.audioEl.src === station.url && !this.audioEl.paused) {
+    if (this.audioEl.src === streamUrl && !this.audioEl.paused) {
       this.isBuffering = false;
       this.isPlaying = true;
       clearTimeout(this.streamWatchdog);
@@ -650,7 +595,7 @@ export class AudioEngine {
 
     // Smooth switch
     this.audioEl.pause();
-    this.audioEl.src = station.url;
+    this.audioEl.src = streamUrl;
     this.audioEl.load();
 
     const playPromise = this.audioEl.play();
@@ -667,6 +612,10 @@ export class AudioEngine {
         .catch(err => {
           console.warn('Stream play notice (waiting for user gesture or buffering):', err.message);
           this.isBuffering = false;
+          if (this.isPoweredOn && this.currentSignalStrength > 0.2) {
+            this.enableFallbackSynth(true);
+          }
+          if (this.onStatusChange) this.onStatusChange();
         });
     }
   }

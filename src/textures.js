@@ -239,36 +239,47 @@ export function createDialTexture() {
 }
 
 // 2. Speaker Grille Texture with high-precision drilled micro-perforations
-export function createSpeakerGrilleTexture() {
+export function createSpeakerGrilleTexture(theme = 'white') {
+  const isBlack = theme === 'black';
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
   canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
-  // Satin anodized aluminum background
+  // Background gradient (brushed aluminum or dark graphite)
   const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  bgGrad.addColorStop(0, '#d2d6da');
-  bgGrad.addColorStop(0.5, '#dfe3e7');
-  bgGrad.addColorStop(1, '#c8ccd0');
+  if (isBlack) {
+    bgGrad.addColorStop(0, '#22252a');
+    bgGrad.addColorStop(0.5, '#292c32');
+    bgGrad.addColorStop(1, '#1e2025');
+  } else {
+    bgGrad.addColorStop(0, '#d2d6da');
+    bgGrad.addColorStop(0.5, '#dfe3e7');
+    bgGrad.addColorStop(1, '#c8ccd0');
+  }
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Brushed metal micro-lines
   for (let i = 0; i < 800; i++) {
     const y = Math.random() * canvas.height;
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.035)';
+    if (isBlack) {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.12)';
+    } else {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.035)';
+    }
     ctx.fillRect(0, y, canvas.width, 1 + Math.random() * 2);
   }
 
   // Braun Logo in top-left
   const baseFont = FONT_SANS;
-  ctx.fillStyle = '#151618';
+  ctx.fillStyle = isBlack ? '#f4f6fa' : '#151618';
   ctx.font = `bold 64px ${baseFont}`;
   ctx.textAlign = 'left';
   ctx.fillText('BRAUN', 48, 82);
 
   ctx.font = `600 18px ${baseFont}`;
-  ctx.fillStyle = '#484b52';
+  ctx.fillStyle = isBlack ? '#9aa0ad' : '#484b52';
   ctx.fillText('HI-FI ACOUSTIC 15W', 50, 114);
 
   // Full-coverage circular perforated hole grid
@@ -288,25 +299,25 @@ export function createSpeakerGrilleTexture() {
       const cy = startY + r * stepY;
 
       // Bottom-right chamfer highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillStyle = isBlack ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.5)';
       ctx.beginPath();
       ctx.arc(cx + 0.9, cy + 0.9, holeR + 0.8, 0, Math.PI * 2);
       ctx.fill();
 
       // Top-left shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillStyle = isBlack ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.35)';
       ctx.beginPath();
       ctx.arc(cx - 0.6, cy - 0.6, holeR, 0, Math.PI * 2);
       ctx.fill();
 
       // Deep dark cavity hole
-      ctx.fillStyle = '#111214';
+      ctx.fillStyle = isBlack ? '#0a0b0d' : '#111214';
       ctx.beginPath();
       ctx.arc(cx, cy, holeR, 0, Math.PI * 2);
       ctx.fill();
 
       // Acoustic cloth texture dot inside hole
-      ctx.fillStyle = '#1e2024';
+      ctx.fillStyle = isBlack ? '#141518' : '#1e2024';
       ctx.beginPath();
       ctx.arc(cx, cy, holeR * 0.6, 0, Math.PI * 2);
       ctx.fill();
@@ -409,27 +420,40 @@ export function createVUMeterTexture() {
 }
 
 // 4. Control Panel Decals & Calibrated Scales
-export function createControlPanelTexture() {
+export function createControlPanelTexture(theme = 'white') {
+  const isBlack = theme === 'black';
   const canvas = document.createElement('canvas');
   canvas.width = 2048;
   canvas.height = 960;
   const ctx = canvas.getContext('2d');
 
-  // Brushed aluminum panel background
+  // Panel background (brushed anodized aluminum or dark graphite)
   const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  bgGrad.addColorStop(0, '#d2d6da');
-  bgGrad.addColorStop(0.5, '#dfe3e7');
-  bgGrad.addColorStop(1, '#cbcfd3');
+  if (isBlack) {
+    bgGrad.addColorStop(0, '#22252a');
+    bgGrad.addColorStop(0.5, '#2a2d33');
+    bgGrad.addColorStop(1, '#1f2126');
+  } else {
+    bgGrad.addColorStop(0, '#d2d6da');
+    bgGrad.addColorStop(0.5, '#dfe3e7');
+    bgGrad.addColorStop(1, '#cbcfd3');
+  }
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let i = 0; i < 1200; i++) {
     const y = Math.random() * canvas.height;
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
+    if (isBlack) {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.12)';
+    } else {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
+    }
     ctx.fillRect(0, y, canvas.width, 1 + Math.random() * 2);
   }
 
   const baseFont = FONT_SANS;
+  const primaryTextColor = isBlack ? '#f2f4f8' : '#151618';
+  const secondaryTextColor = isBlack ? '#9aa0ad' : '#555860';
 
   // Band push-button labels along top row
   const bands = ['FM (UKW)', 'AM (MW)', 'SW (KW)', 'AUX'];
@@ -441,17 +465,17 @@ export function createControlPanelTexture() {
     const bx = bStartX + idx * bSpacing;
     ctx.font = `bold 28px ${baseFont}`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#151618';
+    ctx.fillStyle = primaryTextColor;
     ctx.fillText(b, bx, bY);
   });
 
   // Power switch label
   ctx.font = `bold 28px ${baseFont}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#151618';
+  ctx.fillStyle = primaryTextColor;
   ctx.fillText('POWER', 160, 480);
   ctx.font = `600 20px ${baseFont}`;
-  ctx.fillStyle = '#555860';
+  ctx.fillStyle = secondaryTextColor;
   ctx.fillText('NETZ', 160, 512);
 
   // Volume & Tone scale dots
@@ -459,7 +483,7 @@ export function createControlPanelTexture() {
     const startAng = Math.PI * 0.75;
     const endAng = Math.PI * 2.25;
 
-    ctx.fillStyle = '#151618';
+    ctx.fillStyle = primaryTextColor;
     for (let i = 0; i <= steps; i++) {
       const ang = startAng + (i / steps) * (endAng - startAng);
       const x = cx + Math.cos(ang) * radius;
@@ -473,12 +497,12 @@ export function createControlPanelTexture() {
 
     ctx.font = `bold 26px ${baseFont}`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#151618';
+    ctx.fillStyle = primaryTextColor;
     ctx.fillText(label, cx, cy + radius + 55);
 
     if (sublabel) {
       ctx.font = `600 20px ${baseFont}`;
-      ctx.fillStyle = '#555860';
+      ctx.fillStyle = secondaryTextColor;
       ctx.fillText(sublabel, cx, cy + radius + 85);
     }
   };
@@ -492,10 +516,10 @@ export function createControlPanelTexture() {
   // Tuning Knob label
   ctx.font = `bold 30px ${baseFont}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#151618';
+  ctx.fillStyle = primaryTextColor;
   ctx.fillText('TUNING', 1720, 840);
   ctx.font = `600 22px ${baseFont}`;
-  ctx.fillStyle = '#555860';
+  ctx.fillStyle = secondaryTextColor;
   ctx.fillText('ABSTIMMUNG', 1720, 874);
 
   const texture = new THREE.CanvasTexture(canvas);

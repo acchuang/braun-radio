@@ -68,12 +68,21 @@ export class BraunRadio extends BaseRadio {
   build() {
     // 1. Textures
     const dialTex = createDialTexture();
-    const grilleTex = createSpeakerGrilleTexture();
     const vuTex = createVUMeterTexture();
-    const controlPanelTex = createControlPanelTexture();
     const knurlTex = createKnurlNormalMap();
     const backplateTex = createBackplateTexture();
     const woodTex = createWoodTexture();
+
+    this.cachedTextures = {
+      white: {
+        grille: createSpeakerGrilleTexture('white'),
+        controlPanel: createControlPanelTexture('white')
+      },
+      black: {
+        grille: createSpeakerGrilleTexture('black'),
+        controlPanel: createControlPanelTexture('black')
+      }
+    };
 
     // 2. Base Materials
     this.materials.body = new THREE.MeshStandardMaterial({
@@ -124,10 +133,10 @@ export class BraunRadio extends BaseRadio {
     this.buildCabinet();
 
     // 4. Front Subassemblies (Mounted at z = 0.655)
-    this.buildSpeaker(grilleTex);
+    this.buildSpeaker(this.cachedTextures.white.grille);
     this.buildDialWindow(dialTex);
     this.buildVUMeter(vuTex);
-    this.buildControlPanel(controlPanelTex);
+    this.buildControlPanel(this.cachedTextures.white.controlPanel);
 
     // 5. Antenna, Backplate, Feet
     this.buildAntenna();
@@ -708,22 +717,46 @@ export class BraunRadio extends BaseRadio {
     if (themeName === 'white') {
       this.materials.body.color.setHex(0xedebe6);
       this.materials.body.roughness = 0.38;
-      this.grilleMat.color.setHex(0xffffff);
-      this.controlPanelMat.color.setHex(0xffffff);
+      if (this.grilleMat) {
+        this.grilleMat.map = this.cachedTextures.white.grille;
+        this.grilleMat.color.setHex(0xffffff);
+        this.grilleMat.needsUpdate = true;
+      }
+      if (this.controlPanelMat) {
+        this.controlPanelMat.map = this.cachedTextures.white.controlPanel;
+        this.controlPanelMat.color.setHex(0xffffff);
+        this.controlPanelMat.needsUpdate = true;
+      }
       this.leftSideWood.visible = false;
       this.rightSideWood.visible = false;
     } else if (themeName === 'black') {
       this.materials.body.color.setHex(0x191a1d);
       this.materials.body.roughness = 0.45;
-      this.grilleMat.color.setHex(0x42464c);
-      this.controlPanelMat.color.setHex(0x42464c);
+      if (this.grilleMat) {
+        this.grilleMat.map = this.cachedTextures.black.grille;
+        this.grilleMat.color.setHex(0xffffff);
+        this.grilleMat.needsUpdate = true;
+      }
+      if (this.controlPanelMat) {
+        this.controlPanelMat.map = this.cachedTextures.black.controlPanel;
+        this.controlPanelMat.color.setHex(0xffffff);
+        this.controlPanelMat.needsUpdate = true;
+      }
       this.leftSideWood.visible = false;
       this.rightSideWood.visible = false;
     } else if (themeName === 'wood') {
       this.materials.body.color.setHex(0xf4f1eb);
       this.materials.body.roughness = 0.35;
-      this.grilleMat.color.setHex(0xffffff);
-      this.controlPanelMat.color.setHex(0xffffff);
+      if (this.grilleMat) {
+        this.grilleMat.map = this.cachedTextures.white.grille;
+        this.grilleMat.color.setHex(0xffffff);
+        this.grilleMat.needsUpdate = true;
+      }
+      if (this.controlPanelMat) {
+        this.controlPanelMat.map = this.cachedTextures.white.controlPanel;
+        this.controlPanelMat.color.setHex(0xffffff);
+        this.controlPanelMat.needsUpdate = true;
+      }
       this.leftSideWood.visible = true;
       this.rightSideWood.visible = true;
     }
